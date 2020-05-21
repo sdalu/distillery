@@ -1,3 +1,5 @@
+[![Gem Version](https://badge.fury.io/rb/rom-distillery.svg)](https://badge.fury.io/rb/rom-distillery)
+
 Requirements
 ============
 * The 7z, zip, unzip programs
