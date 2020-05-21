@@ -27,7 +27,7 @@ Gem::Specification.new do |s|
   s.add_development_dependency "rake"
 
   s.executables   = [ 'rhum' ]
-  s.files         =  %w[ LICENSE Gemfile distillery.gemspec ] +
+  s.files         =  %w[ LICENSE README.md Gemfile distillery.gemspec ] +
 		     Dir['lib/**/*.rb'  ] +
                      Dir['lib/**/*.yaml']
   
