@@ -2,8 +2,11 @@
 $:.unshift File.expand_path("../lib", __FILE__)
 require "distillery/version"
 
+# NOTE: 'distillery' name is taken but not used since 2012
+#       https://rubygems.org/gems/distillery
+
 Gem::Specification.new do |s|
-  s.name          = "distillery"
+  s.name          = "rom-distillery"	
   s.version       = Distillery::VERSION
   s.platform      = Gem::Platform::RUBY
   s.licenses      = [ 'EUPL-1.2' ]
