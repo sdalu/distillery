@@ -1,3 +1,7 @@
+Requirements
+============
+* The 7z, zip, unzip programs
+
 
 Usage
 =====
