@@ -1,0 +1,6 @@
+#!/usr/local/bin/ruby
+
+require 'distillery'
+require 'distillery/cli'
+
+Distillery::CLI.run

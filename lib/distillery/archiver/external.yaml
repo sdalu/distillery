@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: EUPL-1.2
+
+7z:
+  extension: 7z
+  mimetype: application/x-7z-compressed
+  cmd: 7z
+  list:
+    args: [ l, -ba, $(infile) ]
+    parser: (?:\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})?\s+(?<type>.)....\s+\d+\s+(?:\d+\s+)?(?<entry>.+)
+    validator:
+      :type: '.'
+  read:
+    args: [ e, -so, $(infile), $(entry) ]
+  write:
+    args: [ a, $(infile), -m0=lzma, -mx=9, -si$(entry) ]
+  delete:
+    args: [ d, $(infile), $(entry) ]
+
+zip:
+  extension: zip
+  mimetype: application/zip
+  list:
+    cmd: unzip
+    args: [ -Z1, $(infile) ]
+    parser: (?<entry>.+)
+  read:
+    cmd: unzip
+    args: [ -p, $(infile), $(entry) ]
+  delete:
+    cmd: zip
+    args: [ -d, $(infile), $(entry) ]
