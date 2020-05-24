@@ -5,24 +5,24 @@ class CLI
 
     # Save ROM header in a specified directory
     #
-    # @param hdrdir  	[String]		Directory for saving headers
-    # @param romdirs 	[Array<String>]		ROMs directories
+    # @param hdrdir     [String]                Directory for saving headers
+    # @param romdirs    [Array<String>]         ROMs directories
     #
     # @return [self]
     #
     def header(hdrdir, romdirs)
         storage = make_storage(romdirs)
-        storage.roms.select {|rom| rom.headered? }.each {|rom|
+        storage.roms.select(&:headered?).each do |rom|
             file   = File.join(hdrdir, rom.fshash)
             header = rom.header
-            if File.exists?(file)
+            if File.exist?(file)
                 if header != File.binread(file)
                     warn "different header exists : #{rom.fshash}"
                 end
                 next
             end
             File.write(file, header)
-        }
+        end
 
         self
     end
@@ -30,7 +30,7 @@ class CLI
 
     # -----------------------------------------------------------------
 
-    
+
     # Parser for header command
     HeaderParser = OptionParser.new do |opts|
         opts.banner = "Usage: #{PROGNAME} index ROMDIR..."
@@ -42,9 +42,9 @@ class CLI
         opts.separator ""
     end
 
-    
+
     # Register header command
-    subcommand :header, "Extract ROM embedded header",
+    subcommand :header, 'Extract ROM embedded header',
                HeaderParser do |argv, **opts|
         opts[:romdirs] = ARGV
         if opts[:destdir].nil? && (opts[:romdirs].size == 1)

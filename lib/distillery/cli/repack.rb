@@ -13,7 +13,7 @@ class CLI
         decorator =
             if @output_mode == :fancy
                 lambda {|file, type, &block|
-                    spinner = TTY::Spinner.new("[:spinner] :file",
+                    spinner = TTY::Spinner.new('[:spinner] :file',
                                                :hide_cursor => true,
                                                :output      => @io)
                     width = TTY::Screen.width - 8
@@ -33,14 +33,14 @@ class CLI
                         @io.puts "OK    : #{file} -> #{type}" if @verbose
                     end
                 }
-                
+
             else
 
                 raise Assert
             end
-        
-        
-        from_romdirs(romdirs) { | srcfile, dir: |
+
+
+        from_romdirs(romdirs) do |srcfile, dir:|
             # Destination file according to archive type
             dstfile  = srcfile.dup
             dstfile += ".#{type}" unless dstfile.sub!(/\.[^.\/]*$/, ".#{type}")
@@ -62,22 +62,22 @@ class CLI
             end
 
             # Recompress
-            decorator.(srcfile, type) { 
-                next "#{type} exists" if File.exists?(dst)
+            decorator.(srcfile, type) {
+                next "#{type} exists" if File.exist?(dst)
                 archive = Distillery::Archiver.for(dst)
-                Distillery::Archiver.for(phy).each {|entry, i|
-                    archive.writer(entry) {|o|
+                Distillery::Archiver.for(phy).each do |entry, i|
+                    archive.writer(entry) do |o|
                         while data = i.read(32 * 1024)
                             o.write(data)
                         end
-                    }
-                }
+                    end
+                end
                 File.unlink(phy)
             }
-        }
+        end
     end
 
-    
+
     # -----------------------------------------------------------------
 
 
@@ -100,14 +100,14 @@ class CLI
         opts.separator ""
     end
 
-    
+
     # Register repack command
-    subcommand :repack, "Recompress archives",
+    subcommand :repack, 'Recompress archives',
                RepackParser do |argv, **opts|
         opts[:romdirs] = argv
-        
+
         [ opts[:romdirs], opts[:format] ]
     end
-    
+
 end
 end

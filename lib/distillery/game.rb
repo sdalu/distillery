@@ -3,12 +3,12 @@
 require_relative 'game/release'
 
 module Distillery
-    
+
 # Information about game
 #
 class Game
     # Create a new instance of Game.
-    # 
+    #
     # @param name     [String]
     # @param roms     [ROM]
     # @param releases [Array<Game::Release>,nil]
@@ -22,11 +22,12 @@ class Game
         @cloneof  = cloneof
     end
 
-    
+
     # @return [Integer]
     def hash
         @name.hash
     end
+
 
     def eql?(o)
         @name.eql?(o.name)
@@ -64,7 +65,7 @@ class Game
                      : @roms.each
     end
 
-    
+
 end
 
 end 

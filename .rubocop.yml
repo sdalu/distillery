@@ -1,0 +1,52 @@
+# See: https://github.com/rubocop-hq/rubocop/blob/master/config/default.yml
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+
+AllCops:
+  TargetRubyVersion: 2.5
+
+
+Style/Encoding:
+  Enabled: false
+
+Style/HashSyntax:
+  EnforcedStyle: no_mixed_keys
+  UseHashRocketsWithSymbolValues: true
+  PreferHashRocketsForNonAlnumEndingSymbols: true
+
+  Layout/LineLength:
+  Max: 79
+
+SpaceInsideArrayLiteralBrackets:
+  EnforcedStyle: space
+  EnforcedStyleForEmptyBrackets: no_space
+
+
+Layout/EmptyLines:
+  Enabled: false
+
+Layout/EmptyLinesAroundClassBody:
+  Enabled: false
+
+Layout/EmptyLinesAroundMethodBody:
+  Enabled: false
+
+Layout/EmptyLineBetweenDefs:
+  NumberOfEmptyLines: 2
+
+Layout/IndentationWidth:
+  Width: 4
+
+Layout/SpaceInsidePercentLiteralDelimiters:
+  Enabled: false
+  
+
+Metrics/MethodLength:
+  Max: 15
+
+Metrics/PerceivedComplexity:
+  Max: 10
+
+ 

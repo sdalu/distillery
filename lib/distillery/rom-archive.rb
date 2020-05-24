@@ -19,29 +19,29 @@ Distillery::Archiver.registering
 module Distillery
 
 # Deal with ROM embedded in an archive file.
-#    
+#
 class ROMArchive
     include Enumerable
 
     # Prefered
     PREFERED   = '7z'
-    
+
     # Allowed extension names
     EXTENSIONS = Set[ '7z', 'zip' ]
 
-    
+
     # Set buffer size used when processing archive content
     #
-    # @param size [Integer] 		size in kbytes
+    # @param size [Integer]             size in kbytes
     #
     def self.bufsize=(size)
         @@bufsize = size << 10
     end
 
-    
+
     # Check using extension if file is an archive
     #
-    # @param file [String] 		file to test
+    # @param file [String]              file to test
     #
     # @return [Boolean]
     #
@@ -50,10 +50,10 @@ class ROMArchive
         archives.include?(File.extname(file)[1..-1])
     end
 
-    
+
     # Read ROM archive from file
     #
-    # @param file [String]		path to archive file
+    # @param file [String]              path to archive file
     # @param headers [Array,nil,false]  header definition list
     #
     # @return [ROMArchive]
@@ -62,39 +62,39 @@ class ROMArchive
         # Create archive object
         archive = self.new(file)
 
-        # 
-        Distillery::Archiver.for(file).each {|entry, i|
+        # Iterate on archive entries
+        Distillery::Archiver.for(file).each do |entry, i|
             path = ROM::Path::Archive.new(archive, entry)
             archive[entry] = ROM.new(path, **ROM.info(i, headers: headers))
-        }
+        end
 
         archive
     end
 
-    
+
     # Create an empty archive
     #
-    # @param file [String]		archive file
+    # @param file [String]              archive file
     #
     def initialize(file)
         @file   = file
         @roms   = {}
     end
 
-    
+
     # String representation of the archive
     # @return [String]
     def to_s
         @file
     end
 
-    
+
     # Assign a ROM to the archive
     #
-    # @param entry [String] 		archive entry name
-    # @param rom   [ROM] 		ROM
+    # @param entry [String]             archive entry name
+    # @param rom   [ROM]                ROM
     #
-    # @return [ROM]			the assigned ROM
+    # @return [ROM]                     the assigned ROM
     #
     def []=(entry, rom)
         @roms.merge!(entry => rom) {|key, old_rom, new_rom|
@@ -104,10 +104,10 @@ class ROMArchive
         rom
     end
 
-        
+
     # Same archive file
     #
-    # @param o [ROMArchive]		other archive
+    # @param o [ROMArchive]             other archive
     # @return [Boolean]
     #
     def same_file?(o)
@@ -117,23 +117,23 @@ class ROMArchive
 
     # Test if archive is identical (same file, same content)
     #
-    # @param o [ROMArchive]		other archive
+    # @param o [ROMArchive]             other archive
     # @return [Boolean]
     #
     def ==(o)
-        o.kind_of?(ROMArchive) 						&&
-            (self.entries.to_set == o.entries.to_set) 			&&
+        o.kind_of?(ROMArchive)                                          &&
+            (self.entries.to_set == o.entries.to_set)                   &&
             self.entries.all? {|entry| self[entry].same?(o[entry]) }
     end
 
-    
+
     # Archive size (number of entries)
     # @return [Integer]
     def size
         @roms.size
     end
 
-    
+
     # Iterate over each ROM
     #
     # @yieldparam rom [ROM]
@@ -144,7 +144,8 @@ class ROMArchive
         block_given? ? @roms.each_value {|r| yield(r) }
                      : @roms.each_value
     end
-    
+
+
     # List of ROMs
     #
     # @return [Array<ROM>]
@@ -153,7 +154,7 @@ class ROMArchive
         @roms.values
     end
 
-    
+
     # List of archive entries
     #
     # @return [Array<String>]
@@ -162,25 +163,25 @@ class ROMArchive
         @roms.keys
     end
 
-    
+
     # Get ROM by entry
     #
-    # @param entry [String]		archive entry
+    # @param entry [String]             archive entry
     # @return [ROM]
     #
     def [](entry)
         @roms[entry]
     end
 
-    
+
     # Delete entry
     #
-    # @param entry [String]		archive entry
+    # @param entry [String]             archive entry
     #
-    # @return [Boolean]			operation status
+    # @return [Boolean]                 operation status
     #
     def delete!(entry)
-        Distillery::Archiver.for(@file) {|archive|
+        Distillery::Archiver.for(@file) do |archive|
             if archive.delete!(entry)
                 if archive.empty?
                     File.unlink(@file)
@@ -189,16 +190,16 @@ class ROMArchive
             else
                 false
             end
-        }
+        end
     end
 
-    
+
     # Read ROM.
     # @note Can be costly, to be avoided.
     #
-    # @param entry [String]		archive entry
+    # @param entry [String]             archive entry
     #
-    # @yieldparam [#read] io		stream for reading
+    # @yieldparam [#read] io            stream for reading
     #
     # @return block value
     #
@@ -206,23 +207,23 @@ class ROMArchive
         Distillery::Archiver.for(@file).reader(entry, &block)
     end
 
-    
+
     # Extract rom to the filesystem
     #
-    # @param entry  [String]		entry (rom) to extract
-    # @param to     [String]		destination
-    # @param length [Integer,nil]	data length to be copied
-    # @param offset [Integer]		data offset
-    # @param force  [Boolean]		remove previous file if necessary
+    # @param entry  [String]            entry (rom) to extract
+    # @param to     [String]            destination
+    # @param length [Integer,nil]       data length to be copied
+    # @param offset [Integer]           data offset
+    # @param force  [Boolean]           remove previous file if necessary
     #
-    # @return [Boolean]			operation status
+    # @return [Boolean]                 operation status
     #
     def extract(entry, to, length = nil, offset = 0, force: false)
-        Distillery::Archiver.for(@file).reader(entry) {|i|
+        Distillery::Archiver.for(@file).reader(entry) do |i|
             # Copy file
             begin
                 op = force ? File::TRUNC : File::EXCL
-                File.open(to, File::CREAT|File::WRONLY|op) {|o|
+                File.open(to, File::CREAT | File::WRONLY | op) do |o|
                     while (skip = [ offset, @@bufsize ].min) > 0
                         i.read(skip)
                         offset -= skip
@@ -239,20 +240,20 @@ class ROMArchive
                             length -= sz
                         end
                     end
-                }
+                end
             rescue Errno::EEXIST
                 return false
             end
-            
+
             # Assuming entries are unique
             return true
-        }
-        
+        end
+
         # Was not found
-        return false
+        false
     end
-    
-    
+
+
     # Archive file
     # @return [String]
     attr_reader :file
@@ -261,6 +262,5 @@ end
 
 # Set default buffer size to 32k
 ROMArchive.bufsize = 32
-
 
 end

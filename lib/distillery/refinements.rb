@@ -9,7 +9,7 @@ module StringY
             unless [ :begin, :middle, :end ].include?(position)
                 raise ArgumentError, "unsupported position (#{position})"
             end
-            
+
             # Is there a need to ellipsize ?
             return self if self.size <= width
 
@@ -18,7 +18,7 @@ module StringY
                 return ellipsis
             end
 
-            # Deal with nil-ellipsis 
+            # Deal with nil-ellipsis
             ellipsis ||= ''
 
             # Perform ellipsis
@@ -28,14 +28,14 @@ module StringY
             case position
             when :begin  then str[0, delsize]       = ellipsis
             when :middle then str[width/2, delsize] = ellipsis
-            when :end    then str[-delsize .. -1]   = ellipsis
+            when :end    then str[-delsize..-1]     = ellipsis
             end
 
             # Return ellipsized string
             str
         end
     end
-    
+
 end
 
 end

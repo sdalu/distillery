@@ -10,21 +10,22 @@ class Release
 
     # List all assigned region code.
     #
-    # @return [Set<String>]		set of region code
+    # @return [Set<String>]             set of region code
     #
     def self.regions
         @@regions
     end
 
+
     # Create a new instance of Release.
     #
-    # @param name   [String]		release name
-    # @param region [String]		region of release
+    # @param name   [String]            release name
+    # @param region [String]            region of release
     #
     def initialize(name, region:)
         @name   = name
         @region = region
-        
+
         @@regions.add(region)
     end
 
@@ -35,6 +36,7 @@ class Release
     # Region of release
     # @return [String]
     attr_reader :region
+
 end
 
 end

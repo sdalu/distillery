@@ -15,8 +15,8 @@ class External < Archiver
     # Perform registration of the various archive format
     # supported by this archiver provider
     #
-    # @param list         [Array<String>]	list of format to register
-    # @param default_file [String]		default configuration file
+    # @param list         [Array<String>]       list of format to register
+    # @param default_file [String]              default configuration file
     #
     # @return [void]
     #
@@ -25,10 +25,10 @@ class External < Archiver
         dflt_config = YAML.load_file(default_file)
 
         if Array === list
-            list = Hash[list.map {|app| [ app, {} ] }]
+            list = Hash[list.map { |app| [ app, {} ] }]
         end
 
-        list.each {|app, cfg|
+        list.each do |app, cfg|
             dflt       = dflt_config.dig(app) || {}
             extensions = Array(cfg.dig('extension')  || dflt.dig('extension'))
             mimetypes  = Array(cfg.dig('mimetype' )  || dflt.dig('mimetype' ))
@@ -64,24 +64,25 @@ class External < Archiver
             }
 
             if list[:cmd].nil? || read[:cmd].nil?
-                Archiver.logger&.warn {
+                Archiver.logger&.warn do
                     "#{self}: command not defined for #{app} program (SKIP)"
-                }
+                end
                 next
             end
             if write[:cmd].nil?
-                Archiver.logger&.warn {
+                Archiver.logger&.warn do
                     "#{self}: write mode not supported for #{app} program"
-                }
+                end
             end
-                
+
             Archiver.register(External.new(list, read, write, delete,
                                            extensions: extensions,
                                             mimetypes: mimetypes))
-        }
+        end
     end
-    
-    def initialize(list, read, write=nil, delete=nil,
+
+
+    def initialize(list, read, write = nil, delete = nil,
                    extensions:, mimetypes: nil)
         @list       = list
         @read       = read
@@ -90,85 +91,91 @@ class External < Archiver
         @extensions = extensions
         @mimetypes  = mimetypes
     end
-    
-                
+
+
     # (see Archiver#extensions)
     def extensions
         @extensions
     end
 
-    
+
     # (see Archiver#mimetypes)
     def mimetypes
         @mimetypes
     end
 
+
     # (see Archiver#each)
-    def each(file, &block)
-        return to_enum(:each, file) if block.nil?
-        entries(file).each {|entry|
-            reader(file, entry) {|io|
-                block.call(entry, io)
-            }
-        }
+    def each(file)
+        return to_enum(:each, file) unless block_given?
+
+        entries(file).each do |entry|
+            reader(file, entry) do |io|
+                yield(entry, io)
+            end
+        end
     end
+
 
     # (see Archiver#reader)
-    def reader(file, entry, &block)
-        subst = { '$(infile)' => file, '$(entry)' => entry  }
+    def reader(file, entry)
+        subst = { '$(infile)' => file, '$(entry)' => entry }
         cmd   = @read[:cmd ]
-        args  = @read[:args].map{|e| e.gsub(/\$\(\w+\)/, subst) }
+        args  = @read[:args].map { |e| e.gsub(/\$\(\w+\)/, subst) }
 
-        Open3.popen2(cmd, *args) {|stdin, stdout|
+        Open3.popen2(cmd, *args) do |stdin, stdout|
             stdin.close_write
-            block.call(InputStream.new(stdout))
-        }
+            yield(InputStream.new(stdout))
+        end
     end
+
 
     # (see Archiver#writer)
-    def writer(file, entry, &block)
-        subst = { '$(infile)' => file, '$(entry)' => entry  }
+    def writer(file, entry)
+        subst = { '$(infile)' => file, '$(entry)' => entry }
         cmd   = @write[:cmd ]
-        args  = @write[:args].map{|e| e.gsub(/\$\(\w+\)/, subst) }
+        args  = @write[:args].map { |e| e.gsub(/\$\(\w+\)/, subst) }
 
-        Open3.popen2(cmd, *args) {|stdin, stdout|
-            block.call(OutputStream.new(stdin))
-        }
+        Open3.popen2(cmd, *args) do |stdin, _stdout|
+            yield(OutputStream.new(stdin))
+        end
     end
+
 
     # (see Archiver#delete!)
     def delete!(file, entry)
-        subst = { '$(infile)' => file, '$(entry)' => entry  }
+        subst = { '$(infile)' => file, '$(entry)' => entry }
         cmd   = @delete[:cmd ]
-        args  = @delete[:args].map{|e| e.gsub(/\$\(\w+\)/, subst) }
+        args  = @delete[:args].map { |e| e.gsub(/\$\(\w+\)/, subst) }
 
-        Open3.popen2(cmd, *args) {|stdin, stdout|
+        Open3.popen2(cmd, *args) do |stdin, _stdout|
             stdin.close_write
-        }
+        end
 
         true
     end
+
 
     # (see Archiver#entries)
     def entries(file)
         subst     = { '$(infile)' => file }
         cmd       = @list[:cmd      ]
-        args      = @list[:args     ].map{|e| e.gsub(/\$\(\w+\)/, subst) }
+        args      = @list[:args     ].map { |e| e.gsub(/\$\(\w+\)/, subst) }
         parser    = @list[:parser   ]
         validator = @list[:validator]
-        
+
         stdout, stderr, status = Open3.capture3(cmd, *args)
 
-        if ! status.exitstatus.zero?
+        if !status.exitstatus.zero?
             raise ExecError, "running external command failed (#{stderr})"
         end
 
         stdout.force_encoding('BINARY').lines(chomp: true).map {|l|
-            unless m = l.match(parser)
+            unless (m = l.match(parser))
                 raise ProcessingError, "unable to parse entry (#{file}) (#{l})"
             end
 
-            if validator && validator.find {|k,v| m[k] != v }
+            if validator&.find { |k, v| m[k] != v }
                 next
             end
 

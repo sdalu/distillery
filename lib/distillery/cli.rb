@@ -13,8 +13,8 @@ require_relative 'datfile'
 require_relative 'refinements'
 
 
-if !defined?(::Version)
-    Version = Distillery::VERSION 
+unless defined?(::Version)
+    Version = Distillery::VERSION
 end
 
 
@@ -22,11 +22,11 @@ module Distillery
 
 class CLI
     using Distillery::StringY
-    
+
     # List of available output mode
     OUTPUT_MODE = [ :text, :fancy, :json ]
 
-    
+
     # @!visibility private
     @@subcommands = {}
 
@@ -36,7 +36,7 @@ class CLI
         self.new.parse(argv)
     end
 
-    
+
     # Register a new (sub)command into the CLI
     #
     # @param name [Symbol]
@@ -45,13 +45,13 @@ class CLI
     #
     # @yieldparam argv [Array<String>]
     # @yieldparam into: [Object]
-    # @yieldreturn Array<Object>	# Subcommand parameters
+    # @yieldreturn Array<Object>        # Subcommand parameters
     #
-    def self.subcommand(name, description, optparser=nil, &exec)
+    def self.subcommand(name, description, optparser = nil, &exec)
         @@subcommands[name] = [ description, optparser, exec ]
     end
 
-    
+
     # Global option parser
     #
     GlobalParser = OptionParser.new do |opts|
@@ -67,7 +67,7 @@ class CLI
                 puts "    %-12s %s" % [ name, desc ]
             }
             puts ""
-            puts "See '#{opts.program_name} CMD --help'"		\
+            puts "See '#{opts.program_name} CMD --help'"                \
                  " for more information on a specific command"
             puts ""
             exit
@@ -92,10 +92,10 @@ class CLI
         opts.on '-v', '--[no-]verbose',                  "Run verbosely"
     end
 
-    
+
     # Program name
     PROGNAME = GlobalParser.program_name
-    
+
     def initialize
         @verbose     = true
         @progress    = true
@@ -128,7 +128,7 @@ class CLI
         # Process our options
         if opts.include?(:output)
             @io = File.open(opts[:output],
-                            File::CREAT|File::TRUNC|File::WRONLY)
+                            File::CREAT | File::TRUNC | File::WRONLY)
         end
         if opts.include?(:verbose)
             @verbose = opts[:verbose]
@@ -147,7 +147,7 @@ class CLI
 
         # Parse command, and build arguments call
         _, optparser, argbuilder = @@subcommands[subcommand]
-        optparser.order!(argv, into: opts) if optparser
+        optparser&.order!(argv, into: opts)
         args = argbuilder.call(argv, **opts)
 
         # Call subcommand
@@ -156,11 +156,11 @@ class CLI
         warn "#{PROGNAME}: #{e}"
     end
 
-    
+
     # Create DAT from file
     #
-    # @param file	[String]	dat file
-    # @param verbose	[Boolean]	be verbose
+    # @param file       [String]        dat file
+    # @param verbose    [Boolean]       be verbose
     #
     # @return [DatFile]
     #
@@ -173,27 +173,26 @@ class CLI
     end
 
 
-
     # Potential ROM from directory.
     # @see Vault.from_dir for details
     #
-    # @param romdirs   [Array<String>] 	path to rom directoris
-    # @param depth     [Integer,nil]	exploration depth
+    # @param romdirs   [Array<String>]  path to rom directoris
+    # @param depth     [Integer,nil]    exploration depth
     #
-    # @yieldparam file [String]		file being processed
-    # @yieldparam dir: [String]		directory relative to
+    # @yieldparam file [String]         file being processed
+    # @yieldparam dir: [String]         directory relative to
     #
     def from_romdirs(romdirs, depth: nil, &block)
-        romdirs.each {|dir| 
+        romdirs.each do |dir|
             Vault.from_dir(dir, depth: depth, &block)
-        }
+        end
     end
 
-    
+
     # Create Storage from ROMs directories
     #
-    # @param romdirs	[Array<String>] array of ROMs directories
-    # @param verbose	[Boolean]	be verbose
+    # @param romdirs    [Array<String>] array of ROMs directories
+    # @param verbose    [Boolean]       be verbose
     #
     # @return [Storage]
     #
@@ -201,24 +200,24 @@ class CLI
                      verbose: @verbose, progress: @progress)
         vault = Vault::new
         block = ->(file, dir:) { vault.add_from_file(file, dir) }
-        
+
         if progress
-            TTY::Spinner.new("[:spinner] :file", :hide_cursor => true,
+            TTY::Spinner.new('[:spinner] :file', :hide_cursor => true,
                                                  :clear       => true)
-                        .run('Done!') {|spinner|
-                from_romdirs(romdirs, depth: depth) {|file, dir:|
+                        .run('Done!') do |spinner|
+                from_romdirs(romdirs, depth: depth) do |file, dir:|
                     width = TTY::Screen.width - 8
                     spinner.update(:file => file.ellipsize(width, :middle))
                     block.call(file, dir: dir)
-                }
-            }
+                end
+            end
         else
             from_romdirs(romdirs, depth: depth, &block)
         end
 
         Storage::new(vault)
     end
-    
+
 end
 end
 

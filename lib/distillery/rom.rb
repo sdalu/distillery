@@ -12,8 +12,8 @@ module Distillery
 
 # ROM representation. It will typically have a name (entry) and hold
 # information about it's content (size and checksums). If physical
-# content is present it is referenced by it's path    
-#    
+# content is present it is referenced by it's path
+#
 class ROM
     class HeaderLookupError           < Error
     end
@@ -46,10 +46,10 @@ class ROM
           :offset => 80,
         },
     ]
-    
+
     # @!visibility private
     CHECKSUMS_DEF    = {
-        :sha256 => [ 256, 'e3b0c44298fc1c149afbf4c8996fb924'	\
+        :sha256 => [ 256, 'e3b0c44298fc1c149afbf4c8996fb924'    \
                           '27ae41e4649b934ca495991b7852b855'         ],
         :sha1   => [ 160, 'da39a3ee5e6b4b0d3255bfef95601890afd80709' ],
         :md5    => [ 128, 'd41d8cd98f00b204e9800998ecf8427e'         ],
@@ -70,17 +70,18 @@ class ROM
 
     # List of all DAT supported checksums sorted by strengh order
     CHECKSUMS_DAT    = [ :sha1, :md5, :crc32 ].freeze
-    
+
     # Checksum used when saving to file-system
     FS_CHECKSUM      = :sha1
-    
+
+
     # Get information about ROM file (size, checksum, header, ...)
     #
-    # @param io      [#read]		input object responding to read
-    # @param bufsize [Integer]		buffer size in kB
+    # @param io      [#read]            input object responding to read
+    # @param bufsize [Integer]          buffer size in kB
     # @param headers [Array,nil,false]  header definition list
     #
-    # @return [Hash{Symbol=>Object}]	ROM information
+    # @return [Hash{Symbol=>Object}]    ROM information
     #
     def self.info(io, bufsize: 32, headers: nil)
         # Sanity check
@@ -90,10 +91,10 @@ class ROM
 
         # Apply default
         headers ||= HEADERS
-        
+
         # Adjust bufsize (from kB to B)
         bufsize <<= 10
-        
+
         # Initialize info
         offset = 0
         size   = 0
@@ -114,15 +115,15 @@ class ROM
             end
 
             loop do
-                size  += x.length
+                size   += x.length
                 sha256 << x
                 sha1   << x
                 md5    << x
-                crc32  = Zlib::crc32(x, crc32)
+                crc32   = Zlib::crc32(x, crc32)
                 break unless x = io.read(bufsize)
             end
         end
-        
+
         # Return info
         { :offset  => offset,
           :size    => size,
@@ -133,43 +134,44 @@ class ROM
         }.compact
     end
 
+
     # Check if an header is detected
     #
-    # @param data    [String]		data sample for header detection
-    # @param ext     [String,nil]	extension name as hint
-    # @param headers [Array]		header definition list
+    # @param data    [String]           data sample for header detection
+    # @param ext     [String,nil]       extension name as hint
+    # @param headers [Array]            header definition list
     #
-    # @raise [HeaderLookupError]	sample is too short
+    # @raise [HeaderLookupError]        sample is too short
     #
-    # @return [Integer,nil]		ROM offset
+    # @return [Integer,nil]             ROM offset
     #
     def self.headered?(data, ext: nil, headers: HEADERS)
         # Normalize
-        ext  = ext[1..-1] if ext && (ext[0] == ?.)
+        ext  = ext[1..-1] if ext && (ext[0] == '.')
 
         size = data.size
-        hdr  = headers.find {| rules:, ** |
-            rules.all? {|offset, string|
+        hdr  = headers.find { |rules:, **|
+            rules.all? { |offset, string|
                 if (offset + string.size) > size
                     raise HeaderLookupError
                 end
                 data[offset, string.size] == string
             }
         }
-        
+
         hdr&.[](:offset)
     end
-    
+
     # Copy file, possibly using link if requested.
     #
-    # @param from   [String]		file to copy
-    # @param to     [String]		file destination
-    # @param length [Integer,nil]	data length to be copied
-    # @param offset [Integer]		data offset
-    # @param force  [Boolean]		remove previous file if necessary
-    # @param link   [:hard, :sym, nil]	use link instead of copy if possible
+    # @param from   [String]            file to copy
+    # @param to     [String]            file destination
+    # @param length [Integer,nil]       data length to be copied
+    # @param offset [Integer]           data offset
+    # @param force  [Boolean]           remove previous file if necessary
+    # @param link   [:hard, :sym, nil]  use link instead of copy if possible
     #
-    # @return [Boolean]			status of the operation
+    # @return [Boolean]                 status of the operation
     #
     def self.filecopy(from, to, length = nil, offset = 0,
                       force: false, link: :hard)
@@ -197,7 +199,7 @@ class ROM
                     begin
                         File.unlink(to)
                         File.link(from, to)
-                    return true
+                        return true
                     rescue Errno::ENOENT
                     end
                 rescue Errno::EOPNOTSUPP
@@ -205,53 +207,52 @@ class ROM
                 end
             end
         end
-        
+
         # Copy file
         op = force ? File::TRUNC : File::EXCL
-        File.open(from, File::RDONLY) {|i|
+        File.open(from, File::RDONLY) do |i|
             i.seek(offset)
-            File.open(to, File::CREAT|File::WRONLY|op) {|o|
+            File.open(to, File::CREAT | File::WRONLY | op) do |o|
                 IO.copy_stream(i, o, length)
-            }
-        }
-        return true
-       
+            end
+        end
+        true
     rescue Errno::EEXIST
-        return false
+        false
     end
-    
-    
+
+
     # Create ROM object from file definition.
     #
     # If `file` is an absolute path or `root` is not specified,
     # ROM will be created with basename/dirname of entry.
     #
-    # @param file [String]		path or relative path to file
-    # @param root [String]		anchor for the relative entry path
+    # @param file [String]              path or relative path to file
+    # @param root [String]              anchor for the relative entry path
     # @param headers [Array,nil,false]  header definition list
     #
-    # @return [ROM]			based on `file` content
+    # @return [ROM]                     based on `file` content
     #
-    def self.from_file(file, root=nil, headers: nil)
+    def self.from_file(file, root = nil, headers: nil)
         basedir, entry = if    root.nil?             then File.split(file)
                          elsif file.start_with?('/') then File.split(file)
                          else                             [ root, file ]
                          end
         file           = File.join(basedir, entry)
 
-        rominfo = File.open(file) {|io| ROM.info(io, headers: headers) }
+        rominfo = File.open(file) { |io| ROM.info(io, headers: headers) }
         self.new(ROM::Path::File.new(entry, basedir), **rominfo)
     end
 
 
     # Create ROM representation.
     #
-    # @param path [ROM::Path]			rom path
-    # @param size [Integer] size		rom size
-    # @param offset [Integer,nil]		rom start (if headered)
-    # @option cksums [String,Integer] :sha1	rom checksum using sha1
-    # @option cksums [String,Integer] :md5	rom checksum using md5
-    # @option cksums [String,Integer] :crc32	rom checksum using crc32
+    # @param path [ROM::Path]                   rom path
+    # @param size [Integer] size                rom size
+    # @param offset [Integer,nil]               rom start (if headered)
+    # @option cksums [String,Integer] :sha1     rom checksum using sha1
+    # @option cksums [String,Integer] :md5      rom checksum using md5
+    # @option cksums [String,Integer] :crc32    rom checksum using crc32
     #
     def initialize(path, logger: nil, offset: nil, size: nil, **cksums)
         # Sanity check
@@ -260,28 +261,28 @@ class ROM
         end
 
         unsupported_cksums = cksums.keys - CHECKSUMS
-        if ! unsupported_cksums.empty?
+        if !unsupported_cksums.empty?
             raise ArgumentError,
                   "unsupported checksums <#{unsupported_cksums.join(',')}>"
         end
 
         # Ensure checksum for nul-size ROM
-        if size == 0
-            cksums = Hash[CHECKSUMS_DEF.map {|k, (_, z)| [k, z] } ]
+        if size.zero?
+            cksums = Hash[CHECKSUMS_DEF.map { |k, (_, z)| [ k, z ] }]
         end
 
         # Initialize
         @offset = offset
         @path   = path
         @size   = size
-        @cksum  = Hash[CHECKSUMS_DEF.map {|k, (s, _)|
+        @cksum  = Hash[CHECKSUMS_DEF.map { |k, (s, _)|
             [k, case val = cksums[k]
                 # No checksum
                 when '', '-', nil
                 # Checksum as hexstring or binary string
                 when String
                     case val.size
-                    when s/4 then [val].pack('H*')
+                    when s/4 then [ val ].pack('H*')
                     when s/8 then val
                     else raise ArgumentError,
                                "wrong size #{val.size} for hash string #{k}"
@@ -289,7 +290,7 @@ class ROM
                 # Checksum as integer
                 when Integer
                     raise ArgumentError if (val < 0) || (val > 2**s)
-                    ["%0#{s/4}x" % val].pack('H*')
+                    [ "%0#{s/4}x" % val ].pack('H*')
                 # Oops
                 else raise ArgumentError, "unsupported hash value type"
                 end
@@ -304,20 +305,20 @@ class ROM
             warn "ROM <#{self.to_s}> has #{warns.join(', ')}"
         end
     end
-    
+
 
     # Compare ROMs using their checksums.
     #
-    # @param o    [ROM]		other rom
-    # @param weak [Boolean]	use weak checksum if necessary
+    # @param o    [ROM]         other rom
+    # @param weak [Boolean]     use weak checksum if necessary
     #
-    # @return [Boolean]		if they are the same or not
-    # @return [nil]		if it wasn't decidable due to missing checksum
+    # @return [Boolean]         if they are the same or not
+    # @return [nil]             if it wasn't decidable due to missing checksum
     #
     def same?(o, weak: true)
         return true if self.equal?(o)
         decidable = false
-        (weak ? CHECKSUMS : CHECKSUMS_STRONG).each {|type|
+        (weak ? CHECKSUMS : CHECKSUMS_STRONG).each { |type|
             s_cksum = self.cksum(type)
             o_cksum =    o.cksum(type)
 
@@ -329,14 +330,16 @@ class ROM
         decidable ? true : nil
     end
 
+
     # Check if ROM hold content
     #
     # @return [Boolean]
     #
     def has_content?
-        ! @path.storage.nil?
+        !@path.storage.nil?
     end
-    
+
+
     # String representation.
     #
     # @param prefered [:name, :entry, :checksum]
@@ -359,32 +362,32 @@ class ROM
         end
     end
 
-    
+
     # Does this ROM have an header?
     #
     # @return [Boolean]
     #
     def headered?
-        !@offset.nil? && (@offset > 0)
+        !@offset.nil? && @offset.positive?
     end
 
-    
+
     # Get ROM header
     #
     # @return [String]
     #
     def header
-        return nil if !headered?
-        @path.reader {|io| io.read(@offset) }
+        return nil unless headered?
+        @path.reader { |io| io.read(@offset) }
     end
-    
-    
+
+
     # Get the ROM specific checksum
     #
-    # @param type		checksum type must be one defined in CHECKSUMS
-    # @param fmt [:bin,:hex]	checksum formating
+    # @param type               checksum type must be one defined in CHECKSUMS
+    # @param fmt [:bin,:hex]    checksum formating
     #
-    # @return [String]		checksum value (either binary string
+    # @return [String]          checksum value (either binary string
     #                           or as an hexadecimal string)
     #
     # @raise [ArgumentError]    if `type` is not one defined in {CHECKSUMS}
@@ -402,78 +405,78 @@ class ROM
         end
     end
 
-    
+
     # Get the ROM checksums
     #
-    # @param fmt [:bin,:hex]	checksum formating
+    # @param fmt [:bin,:hex]    checksum formating
     #
-    # @return [Hash{Symbol=>String}]	checksum
+    # @return [Hash{Symbol=>String}]    checksum
     #
     # @raise [ArgumentError]    if `type` is not one defined in {CHECKSUMS}
     #                           or `fmt` is not :bin or :hex
     #
-    def cksums(fmt=:bin)
+    def cksums(fmt = :bin)
         case fmt
         when :bin then @cksum
-        when :hex then @cksum.transform_values {|v| v.unpack1('H*') }
+        when :hex then @cksum.transform_values { |v| v.unpack1('H*') }
         else raise ArgumentError
         end
     end
 
-    
+
     # Checksum to be used for naming on filesystem
     #
-    # @return [String]		checksum hexstring
+    # @return [String]          checksum hexstring
     #
     def fshash
         cksum(FS_CHECKSUM, :hex)
     end
-    
-    
+
+
     # Is size information missing?
     # @return [Boolean]
     def missing_size?
         @size.nil?
     end
 
-    
+
     # Get ROM size in bytes.
     #
-    # @return [Integer]		ROM size in bytes
-    # @return [nil]		ROM has no size
+    # @return [Integer]         ROM size in bytes
+    # @return [nil]             ROM has no size
     #
     def size
         @size
     end
 
-    
+
     # Get ROM sha1 as hexadecimal string (if defined)
     #
-    # @return [String,nil]	hexadecimal checksum value
+    # @return [String,nil]      hexadecimal checksum value
     #
     def sha1
         cksum(:sha1, :hex)
     end
 
-    
+
     # Get ROM md5 as hexadecimal string (if defined)
     #
-    # @return [String,nil]	hexadecimal checksum value
+    # @return [String,nil]      hexadecimal checksum value
     #
     def md5
         cksum(:md5, :hex)
     end
 
-    
+
     # Get ROM crc32 as hexadcimal string (if defined)
     #
-    # @return [String,nil]	hexadecimal checksum value
+    # @return [String,nil]      hexadecimal checksum value
     #
     def crc32
         cksum(:crc32, :hex)
     end
 
-    
+
     # Are some checksums missing?
     #
     # @param checksums [Array<Symbol>] list of checksums to consider
@@ -484,7 +487,7 @@ class ROM
         @cksum.keys != checksums
     end
 
-    
+
     # Get ROM name.
     #
     # @return [String]
@@ -493,7 +496,7 @@ class ROM
         @path.basename
     end
 
-    
+
     # Get ROM path.
     #
     # @return [String]
@@ -502,10 +505,10 @@ class ROM
         @path
     end
 
-    
+
     # ROM reader
     #
-    # @yieldparam [#read] io		stream for reading
+    # @yieldparam [#read] io            stream for reading
     #
     # @return block value
     #
@@ -516,12 +519,12 @@ class ROM
 
     # Copy ROM content to the filesystem, possibly using link if requested.
     #
-    # @param to     [String]		file destination
-    # @param length [Integer,nil]	data length to be copied
+    # @param to     [String]            file destination
+    # @param length [Integer,nil]       data length to be copied
     # @param part   [:all,:header,:rom] which part of the rom file to copy
-    # @param link   [:hard, :sym, nil]	use link instead of copy if possible
+    # @param link   [:hard, :sym, nil]  use link instead of copy if possible
     #
-    # @return [Boolean]			status of the operation
+    # @return [Boolean]                 status of the operation
     #
     def copy(to, part: :all, force: false, link: :hard)
         # Sanity check
@@ -536,14 +539,14 @@ class ROM
                          when :rom
                              [ nil, @offset || 0 ]
                          when :header
-                             return false if !self.headered?
+                             return false unless self.headered?
                              [ @offset, 0 ]
                          end
-        
+
         @path.copy(to, length, offset, force: force, link: link)
     end
 
-    
+
     # Delete physical content.
     #
     # @return [Boolean]
@@ -554,24 +557,24 @@ class ROM
         end
     end
 
-    
+
     # Rename ROM and physical content.
     #
     # @note Renaming could lead to silent removing if same ROM is on its way
     #
-    # @param path  [String]		new ROM path
-    # @param force [Boolean]		remove previous file if necessary
+    # @param path  [String]             new ROM path
+    # @param force [Boolean]            remove previous file if necessary
     #
-    # @return [Boolean]			status of the operation
+    # @return [Boolean]                 status of the operation
     #
-    # @yield				Rename operation (optional)
-    # @yieldparam old [String]		old entry name
-    # @yieldparam new [String]		new entry name
+    # @yield                            Rename operation (optional)
+    # @yieldparam old [String]          old entry name
+    # @yieldparam new [String]          new entry name
     #
     def rename(path, force: false)
         # Deal with renaming
         ok = @path.rename(path, force: force)
-        
+
         if ok
             @entry = entry
             yield(old_entry, entry) if block_given?

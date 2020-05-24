@@ -14,7 +14,7 @@ module Distillery
 class DatFile
     class ContentError < Error
     end
-    
+
     # List of ROM with loosely defined (ie: with some missing checksum)
     #
     # @return [Array<ROM>,nil]
@@ -23,7 +23,7 @@ class DatFile
         @roms.with_partial_checksum
     end
 
-    
+
     # Get Games to which this ROM belongs.
     # @note This only works for ROMs created by the DatFile
     #
@@ -35,7 +35,7 @@ class DatFile
         @roms_game[rom.object_id]
     end
 
-    
+
     # Create DatFile representation from file.
     #
     # @param datfile [String]
@@ -48,24 +48,24 @@ class DatFile
         if !FileTest.file?(datfile)
             raise ArgumentError, "DAT file is missing or not a regular file"
         end
-        
+
         # Get datafile as XML document
         dat = Nokogiri::XML(File.read(datfile))
 
-        dat.xpath('//header').each {|hdr|
+        dat.xpath('//header').each do |hdr|
             @name        = hdr.xpath('name'       )&.first&.content
             @description = hdr.xpath('description')&.first&.content
             @url         = hdr.xpath('url'        )&.first&.content
             @date        = hdr.xpath('date'       )&.first&.content
             @version     = hdr.xpath('version'    )&.first&.content
-        }
-        
+        end
+
         # Process each game elements
-        dat.xpath('//game').each {|g|
-            releases = g.xpath('release').map {|r|
+        dat.xpath('//game').each do |g|
+            releases = g.xpath('release').map { |r|
                 Release::new(r[:name], region: r[:region].upcase)
             }
-            roms     = g.xpath('rom').map {|r|
+            roms     = g.xpath('rom').map { |r|
                 path = File.join(r[:name].split('\\'))
                 ROM::new(ROM::Path::Virtual.new(path),
                          :size  => Integer(r[:size]),
@@ -76,16 +76,16 @@ class DatFile
             game     = Game::new(g['name'], *roms, releases: releases,
                                                     cloneof: g['cloneof'])
 
-            roms.each {|rom|
+            roms.each do |rom|
                 (@roms_game[rom.object_id] ||= []) << game
                 @roms << rom
-            }
+            end
 
             if @games.add?(game).nil?
                 raise ContentError,
                       "Game '#{game}' defined multiple times in DAT file"
             end
-        }
+        end
     end
 
     # Identify ROM which have the same fullname/name but are different

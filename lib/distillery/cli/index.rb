@@ -5,8 +5,8 @@ class CLI
 
     # Print index (hash and path of each ROM)
     #
-    # @param romdirs 	[Array<String>]		ROMs directories
-    # @param type	[Symbol,nil]		type of checksum to use
+    # @param romdirs    [Array<String>]         ROMs directories
+    # @param type       [Symbol,nil]            type of checksum to use
     #
     # @return [self]
     #
@@ -14,24 +14,24 @@ class CLI
         list = make_storage(romdirs).index(type, separator)
 
         if (@output_mode == :fancy) || (@output_mode == :text)
-            list.each {|hash, path|
+            list.each do |hash, path|
                 @io.puts "#{hash} #{path}"
-            }
+            end
 
         elsif @output_mode == :json
             @io.puts Hash[list.each.to_a].to_json
-            
+
         else
             raise Assert
         end
-            
+
         self
-    end    
+    end
 
 
     # -----------------------------------------------------------------
 
-    
+
     # Parser for index command
     IndexParser = OptionParser.new do |opts|
         opts.banner = "Usage: #{PROGNAME} index [options] ROMDIR..."
@@ -48,9 +48,9 @@ class CLI
         opts.separator ""
     end
 
-    
+
     # Register index command
-    subcommand :index, "Generate hash index",
+    subcommand :index, 'Generate hash index',
                IndexParser do |argv, **opts|
 
         if argv.empty?
@@ -60,6 +60,6 @@ class CLI
 
         [ argv, type: opts[:cksum], separator: opts[:separator] ]
     end
-    
+
 end
 end

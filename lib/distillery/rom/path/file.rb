@@ -8,22 +8,24 @@ class Path
 class File < Path
     # Returns a new instance of File.
     #
-    # @param entry   [String]		path to file in basedir
-    # @param basedir [String, nil]	base directory
+    # @param entry   [String]           path to file in basedir
+    # @param basedir [String, nil]      base directory
     #
-    def initialize(entry, basedir=nil)
+    def initialize(entry, basedir = nil)
         if entry.start_with?('/')
             raise ArgumentError, "entry must be relative to basedir"
         end
-            
+
         @entry   = entry
         @basedir = basedir || '.'
     end
+
 
     # (see ROM::Path#to_s)
     def to_s
         self.file
     end
+
 
     # (see ROM::Path#file)
     def file
@@ -32,35 +34,41 @@ class File < Path
         else ::File.join(@basedir, @entry)
         end
     end
-    
+
+
     # (see ROM::Path#storage)
     def storage
         @basedir
     end
+
 
     # (see ROM::Path#entry)
     def entry
         @entry
     end
 
+
     # (see ROM::Path#basename)
     def basename
         ::File.basename(@entry)
     end
+
 
     # (see ROM::Path#reader)
     def reader(&block)
         ::File.open(self.file, ::File::RDONLY, binmode: true, &block)
     end
 
+
     # (see ROM#copy)
     def copy(to, length = nil, offset = 0, force: false, link: :hard)
         (!force && length.nil? && offset.zero? &&
-         ::File.exists?(to) && self.same?(ROM.from_file(to))) ||
+         ::File.exist?(to) && self.same?(ROM.from_file(to))) ||
             ROM.filecopy(self.file, to, length, offset,
                          force: force, link: link)
     end
-    
+
+
     # (see ROM#rename)
     def rename(path, force: false)
         case path
@@ -68,13 +76,12 @@ class File < Path
         else raise ArgumentError, "unsupport path type (#{path.class})"
         end
 
-
         file = if path.start_with?('/')
                then path
                else ::File.join(@basedir, path)
                end
 
-        if !::File.exists?(file)
+        if !::File.exist?(file)
             ::File.rename(self.file, file) == 0
         elsif self.same?(ROM.from_file(file))
             ::File.unlink(self.file) == 1
@@ -86,7 +93,8 @@ class File < Path
     rescue SystemCallError
         false
     end
-    
+
+
     # (see ROM#delete!)
     def delete!
         ::File.unlink(self.file) == 1

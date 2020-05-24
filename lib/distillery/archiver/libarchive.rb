@@ -28,13 +28,14 @@ class LibArchive < Archiver
             @buffer     = StringIO.new
         end
 
-        def read(length=nil)
-            return ''  if length&.zero?		# Zero length request
-            return nil if @buffer.nil?		# End of stream
+
+        def read(length = nil)
+            return ''  if length&.zero?         # Zero length request
+            return nil if @buffer.nil?          # End of stream
 
             # Read data
-            data = @buffer.read(length) || ""
-            while data.size < length do
+            data = @buffer.read(length) || ''
+            while data.size < length
                 # We are short on data, that means buffer has been exhausted
                 # request new data block from the archive
                 block = @read_block.next
@@ -48,23 +49,22 @@ class LibArchive < Archiver
                 # Continue reading
                 data.concat(@buffer.read(length - data.size))
             end
-            
+
             data.empty? ? nil : data
         end
     end
-    
-    
 
-    
+
     def self.registering
-        MODE.each_key {|mode|
+        MODE.each_key do |mode|
             Archiver.register(LibArchive.new(mode))
-        }
+        end
     end
 
 
     def initialize(mode)
         raise ArgumentError unless MODE.include?(mode)
+
         @mode = mode
     end
 
@@ -75,7 +75,7 @@ class LibArchive < Archiver
         MODE[@mode][:extensions]
     end
 
-    
+
     # List of supported mimetypes
     #
     def mimetypes
@@ -84,14 +84,14 @@ class LibArchive < Archiver
 
 
     # (see Archiver#each)
-    def each(file, &block)
-        ::Archive.read_open_filename(file) {|ar|
-            while a_entry = ar.next_header
+    def each(file)
+        ::Archive.read_open_filename(file) do |ar|
+            while (a_entry = ar.next_header)
                 next unless a_entry.regular?
                 $stdout.puts a_entry.pathname
-                block.call(a_entry.pathname, InputStream.new(ar))
+                yield(a_entry.pathname, InputStream.new(ar))
             end
-        }
+        end
         self
     end
 
@@ -100,6 +100,3 @@ end
 
 end
 end
-
-
-

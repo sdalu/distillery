@@ -4,13 +4,12 @@ module Distillery
 class CLI
 
     def overlap(index, romdirs)
-        index   = Hash[File.readlines(index).map {|line| line.split(' ', 2) }]
+        index   = Hash[File.readlines(index).map { |line| line.split(' ', 2) }]
         storage = make_storage(romdirs)
-        storage.roms.select {|rom| index.include?(rom.sha1) }
-            .each {|rom|
+        storage.roms.select { |rom| index.include?(rom.sha1) }
+                    .each   { |rom|
             @io.puts rom.path
         }
-        
     end
 
 
@@ -28,11 +27,11 @@ class CLI
         opts.separator ""
     end
 
-    
+
     # Register overlap command
-    subcommand :overlap, "Check for overlaping ROM" do |argv, **opts|
+    subcommand :overlap, 'Check for overlaping ROM' do |argv, **opts|
         opts[:romdirs] = argv
-        
+
         [ opts[:index], opts[:romdirs] ]
     end
 end

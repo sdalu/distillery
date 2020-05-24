@@ -5,17 +5,18 @@ module Distillery
 class CLI
 
     def clean(datfile, romdirs, savedir: nil)
-        dat        = make_dat(datfile)        
+        dat        = make_dat(datfile)
         storage    = make_storage(romdirs)
         extra      = storage.roms - dat.roms
 
         extra.save(savedir) if savedir
-        extra.each {|rom| rom.delete! }
+        extra.each { |rom| rom.delete! }
     end
-    
+
 
     # -----------------------------------------------------------------
-    
+
+
     # Parser for clean command
     CleanParser = OptionParser.new do |opts|
         opts.banner = "Usage: #{PROGNAME} clean [options] ROMDIR..."
@@ -30,7 +31,7 @@ class CLI
     end
 
     # Register clean command
-    subcommand :clean, "Remove content not referenced in DAT file",
+    subcommand :clean, 'Remove content not referenced in DAT file',
                CleanParser do |argv, **opts|
         opts[:romdirs] = ARGV
         if opts[:dat].nil? && (opts[:romdirs].size == 1)
@@ -39,7 +40,7 @@ class CLI
         if opts[:savedir].nil? && (opts[:romdirs].size == 1)
             opts[:savedir] = File.join(opts[:romdirs].first, '.trash')
         end
-        
+
         if opts[:dat].nil?
             warn "missing datfile"
             exit
@@ -52,9 +53,9 @@ class CLI
             warn "missing save directory"
             exit
         end
-        
+
         [ opts[:dat], opts[:romdirs], savedir: opts[:savedir] ]
     end
-end
 
+end
 end
