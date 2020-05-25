@@ -36,23 +36,22 @@ class CLI
     IndexParser = OptionParser.new do |opts|
         opts.banner = "Usage: #{PROGNAME} index [options] ROMDIR..."
 
-        opts.separator ""
-        opts.separator "Generate hash index"
-        opts.separator ""
-        opts.separator "Options:"
+        opts.separator ''
+        opts.separator 'Generate hash index'
+        opts.separator ''
+        opts.separator 'Options:'
         opts.on '-c', '--cksum=CHECKSUM', ROM::CHECKSUMS,
                 "Checksum used for indexing (#{ROM::FS_CHECKSUM})",
                 " Value: #{ROM::CHECKSUMS.join(', ')}"
         opts.on '-s', '--separator=CHAR', String,
                 "Separator for archive entry (#{ROM::Path::Archive.separator})"
-        opts.separator ""
+        opts.separator ''
     end
 
 
     # Register index command
     subcommand :index, 'Generate hash index',
                IndexParser do |argv, **opts|
-
         if argv.empty?
             warn "At least one rom directory is required"
             exit

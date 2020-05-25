@@ -19,12 +19,12 @@ class CLI
     OverlapParser = OptionParser.new do |opts|
         opts.banner = "Usage: #{PROGNAME} overlap [options] ROMDIR..."
 
-        opts.separator ""
-        opts.separator "Check ROMs status, and display missing or extra files."
-        opts.separator ""
-        opts.separator "Options:"
+        opts.separator ''
+        opts.separator 'Check ROMs status, and display missing or extra files.'
+        opts.separator ''
+        opts.separator 'Options:'
         opts.on '-r', '--revert', "Display present files instead"
-        opts.separator ""
+        opts.separator ''
     end
 
 

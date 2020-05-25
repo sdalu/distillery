@@ -10,7 +10,7 @@ class CLI
         extra      = storage.roms - dat.roms
 
         extra.save(savedir) if savedir
-        extra.each { |rom| rom.delete! }
+        extra.each(&:delete!)
     end
 
 
@@ -21,13 +21,12 @@ class CLI
     CleanParser = OptionParser.new do |opts|
         opts.banner = "Usage: #{PROGNAME} clean [options] ROMDIR..."
 
-        opts.separator ""
-        opts.separator "Remove content not referenced in DAT file"
-        opts.separator ""
-        opts.separator "Options:"
+        opts.separator ''
+        opts.separator 'Remove content not referenced in DAT file'
+        opts.separator ''
+        opts.separator 'Options:'
         opts.on '-s', '--summarize', "Summarize results"
-        opts.separator ""
-
+        opts.separator ''
     end
 
     # Register clean command

@@ -144,7 +144,7 @@ class Vault
     # @return [self,Enumerator]
     #
     def each
-        block_given? ? @roms.each {|r| yield(r) }
+        block_given? ? @roms.each { |rom| yield(rom) }
                      : @roms.each
     end
 
@@ -155,7 +155,7 @@ class Vault
     #
     # @return [Vault]
     def &(o)
-        Vault::new(@roms.select {|rom| o.match(rom) })
+        Vault::new(@roms.select { |rom| o.match(rom) })
     end
 
 
@@ -165,7 +165,7 @@ class Vault
     #
     # @return [Vault]
     def -(o)
-        Vault::new(@roms.reject {|rom| o.match(rom) })
+        Vault::new(@roms.reject { |rom| o.match(rom) })
     end
 
 
@@ -188,9 +188,7 @@ class Vault
     #
     def add_rom(rom)
         # Sanity check
-        unless ROM === rom
-            raise ArgumentError, "not a ROM"
-        end
+        raise ArgumentError, "not a ROM" unless rom.is_a?(ROM)
 
         # Add it to the list
         @roms << rom
@@ -309,12 +307,15 @@ class Vault
     # @return [nil]                     if no match
     #
     def cksummatch(query)
-        CHECKSUMS.each {|type|
+        # Look for matching checksum
+        CHECKSUMS.each do |type|
             if (q = query[type]) && (r = @cksum[type][q])
                 return Array(r)
             end
-        }
-        return nil
+        end
+
+        # No match
+        nil
     end
 
 
@@ -417,8 +418,8 @@ class Vault
         self.each.inject({}) { |grp, rom|
             grp.merge(rom.path.storage => [ rom ]) { |_, old, new| old + new }
         }.each { |storage, roms|
-            size = if ROM::Path::Archive === roms.first.path
-                       roms.first.path.archive.size
+            size = case roms.first.path
+                   when ROM::Path::Archive then roms.first.path.archive.size
                    end
 
             if storage.nil?

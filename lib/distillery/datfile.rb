@@ -88,6 +88,7 @@ class DatFile
         end
     end
 
+
     # Identify ROM which have the same fullname/name but are different
     #
     # @param type [:fullname, :name]	Check by fullname or name
@@ -96,16 +97,16 @@ class DatFile
     #
     def clash(type = :fullname)
         grp = case type
-              when :fullname then @roms.each.group_by {|rom| rom.fullname      }
-              when :name     then @roms.each.group_by {|rom| rom.name          }
+              when :fullname then @roms.each.group_by(&:fullname)
+              when :name     then @roms.each.group_by(&:name)
               else raise ArgumentError
               end
 
-        grp.select           {|_, roms| roms.size > 1 }
-           .transform_values {|roms|
+        grp.select           { |_, roms| roms.size > 1 }
+           .transform_values { |roms|
             lst = []
             while rom = roms.first do
-                t, f = roms.partition {|r| r.same?(rom) }
+                t, f = roms.partition { |r| r.same?(rom) }
                 lst << t.first
                 roms = f
             end
@@ -117,7 +118,7 @@ class DatFile
     # @return [Vault]
     attr_reader :roms
 
-    
+
     # Iterate over each ROM
     #
     # @yieldparam rom [ROM]
@@ -125,7 +126,7 @@ class DatFile
     # @return [self,Enumerator]
     #
     def each_rom
-        block_given? ? @roms.each {|r| yield(r) }
+        block_given? ? @roms.each { |rom| yield(rom) }
                      : @roms.each
     end
 
@@ -133,7 +134,7 @@ class DatFile
     # @return [Set<Games>]
     attr_reader :games
 
-    
+
     # Iterate over each game
     #
     # @yieldparam game [Game]
@@ -141,7 +142,7 @@ class DatFile
     # @return [self,Enumerator]
     #
     def each_game
-        block_given? ? @games.each {|g| yield(g) }
+        block_given? ? @games.each { |game| yield(game) }
                      : @games.each
     end
 
@@ -151,30 +152,30 @@ class DatFile
     # @return [String,nil]
     attr_reader :name
 
-    
+
     # Datfile description
     #
     # @return [String,nil]
     attr_reader :description
 
-    
+
     # Datfile url
     #
     # @return [String,nil]
     attr_reader :url
 
-    
+
     # Datfile date
     #
     # @return [String,nil]
     attr_reader :date
 
-    
+
     # Datfile version
     #
     # @return [String,nil]
     attr_reader :version
-    
+
 end
 
 end

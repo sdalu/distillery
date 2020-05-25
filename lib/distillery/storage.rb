@@ -15,7 +15,7 @@ class Storage
 
 
     def initialize(vault)
-        @roms  = vault
+        @roms = vault
     end
 
 
@@ -25,7 +25,7 @@ class Storage
 
 
     def each
-        block_given? ? @roms.each {|r| yield(r) }
+        block_given? ? @roms.each { |r| yield(r) }
                      : @roms.each
     end
 
@@ -63,7 +63,8 @@ class Storage
                 # Note that in the vault:
                 #   - the same ROM can be present multiple time
                 #   - all checksums are defined
-                match = Array(vault.match(rom)).uniq {|r| r.cksum(FS_CHECKSUM) }
+                match = Array(vault.match(rom))
+                            .uniq { |r| r.cksum(FS_CHECKSUM) }
 
                 # Sanity check
                 if    match.size > 1

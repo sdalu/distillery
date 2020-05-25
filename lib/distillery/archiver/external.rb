@@ -24,18 +24,18 @@ class External < Archiver
                          default_file = File.join(__dir__, 'external.yaml'))
         dflt_config = YAML.load_file(default_file)
 
-        if Array === list
+        if list.is_a?(Array)
             list = Hash[list.map { |app| [ app, {} ] }]
         end
 
         list.each do |app, cfg|
             dflt       = dflt_config.dig(app) || {}
-            extensions = Array(cfg.dig('extension')  || dflt.dig('extension'))
-            mimetypes  = Array(cfg.dig('mimetype' )  || dflt.dig('mimetype' ))
+            extensions = Array(cfg.dig('extension') || dflt.dig('extension'))
+            mimetypes  = Array(cfg.dig('mimetype' ) || dflt.dig('mimetype' ))
             list       = {
-                :cmd    => cfg .dig('list', 'cmd')   || cfg .dig('cmd') ||
-                           dflt.dig('list', 'cmd')   || dflt.dig('cmd'),
-                :args   => cfg .dig('list', 'args')  ||
+                :cmd    => cfg .dig('list', 'cmd')    || cfg .dig('cmd') ||
+                           dflt.dig('list', 'cmd')    || dflt.dig('cmd'),
+                :args   => cfg .dig('list', 'args')   ||
                            dflt.dig('list', 'args'),
                 :parser => if parser = (cfg .dig('list', 'parser')      ||
                                         dflt.dig('list', 'parser'))
@@ -45,15 +45,15 @@ class External < Archiver
                               dflt.dig('list', 'validator')
             }
             read       = {
-                :cmd    => cfg .dig('read', 'cmd')   || cfg .dig('cmd') ||
-                           dflt.dig('read', 'cmd')   || dflt.dig('cmd'),
-                :args   => cfg .dig('read', 'args')  ||
+                :cmd    => cfg .dig('read', 'cmd')    || cfg .dig('cmd') ||
+                           dflt.dig('read', 'cmd')    || dflt.dig('cmd'),
+                :args   => cfg .dig('read', 'args')   ||
                            dflt.dig('read', 'args'),
             }
             write      = {
-                :cmd    => cfg .dig('write', 'cmd')  || cfg .dig('cmd') ||
-                           dflt.dig('write', 'cmd')  || dflt.dig('cmd'),
-                :args   => cfg .dig('write', 'args') ||
+                :cmd    => cfg .dig('write', 'cmd')   || cfg .dig('cmd') ||
+                           dflt.dig('write', 'cmd')   || dflt.dig('cmd'),
+                :args   => cfg .dig('write', 'args')  ||
                            dflt.dig('write', 'args'),
             }
             delete     = {
@@ -170,7 +170,7 @@ class External < Archiver
             raise ExecError, "running external command failed (#{stderr})"
         end
 
-        stdout.force_encoding('BINARY').lines(chomp: true).map {|l|
+        stdout.force_encoding('BINARY').lines(chomp: true).map { |l|
             unless (m = l.match(parser))
                 raise ProcessingError, "unable to parse entry (#{file}) (#{l})"
             end

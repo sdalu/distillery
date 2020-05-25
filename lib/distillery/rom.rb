@@ -15,7 +15,7 @@ module Distillery
 # content is present it is referenced by it's path
 #
 class ROM
-    class HeaderLookupError           < Error
+    class HeaderLookupError < Error
     end
         
     # @!visibility private
@@ -23,25 +23,25 @@ class ROM
         # Nintendo : Family Computer Disk System
         { :name   => 'Family Computer Disk System',
           :ext    => 'fds',
-          :rules  => [ [ 0, "FDS"   ] ],
+          :rules  => [ [ 0, 'FDS' ] ],
           :offset => 16,
         },
         # Nintendo : NES
         { :name   => 'NES',
           :ext    => 'nes',
-          :rules  => [ [ 0, "NES"   ] ],
+          :rules  => [ [ 0, 'NES' ] ],
           :offset => 16,
         },
         # Atari    : Lynx
         { :name   => 'Atary Lynx',
           :ext    => 'lnx',
-          :rules  => [ [ 0, "LYNX" ] ],
+          :rules  => [ [ 0, 'LYNX' ] ],
           :offset => 40,
         },
         # Atari    : 7800
         { :name   => 'Atari 7800',
           :ext    => 'a78',
-          :rules  => [ [  1, "ATARI7800" ],
+          :rules  => [ [  1, 'ATARI7800' ],
                        [ 60, "\x00\x00\x00\x00ACTUAL CART DATA STARTS HERE" ] ],
           :offset => 80,
         },
@@ -85,9 +85,7 @@ class ROM
     #
     def self.info(io, bufsize: 32, headers: nil)
         # Sanity check
-        if bufsize <= 0
-            raise ArgumentError, "bufsize argument must be > 0"
-        end
+        raise ArgumentError, "bufsize argument must be > 0" if bufsize <= 0
 
         # Apply default
         headers ||= HEADERS
@@ -111,6 +109,8 @@ class ROM
                         x = x[offset..-1]
                     end
                 rescue HeaderLookupError
+                    # Sample is likely too short to perform header lookup
+                    # => consider it not headered
                 end
             end
 
@@ -125,12 +125,12 @@ class ROM
         end
 
         # Return info
-        { :offset  => offset,
-          :size    => size,
-          :sha256  => sha256.digest,
-          :sha1    => sha1.digest,
-          :md5     => md5.digest,
-          :crc32   => crc32,
+        { :offset => offset,
+          :size   => size,
+          :sha256 => sha256.digest,
+          :sha1   => sha1.digest,
+          :md5    => md5.digest,
+          :crc32  => crc32,
         }.compact
     end
 
@@ -193,7 +193,8 @@ class ROM
                     File.link(from, to)
                     return true
                 rescue Errno::EEXIST
-                    raise if !force
+                    # Don't catch exception unless forced
+                    raise unless force
                     # File exist and we need to unlink it
                     # if unlink or link fails, something is wrong
                     begin
@@ -201,6 +202,8 @@ class ROM
                         File.link(from, to)
                         return true
                     rescue Errno::ENOENT
+                        # That's ok we tried to unlink a file
+                        # which didn't exists
                     end
                 rescue Errno::EOPNOTSUPP
                     # If link are not supported fallback to copy
@@ -276,24 +279,24 @@ class ROM
         @path   = path
         @size   = size
         @cksum  = Hash[CHECKSUMS_DEF.map { |k, (s, _)|
-            [k, case val = cksums[k]
-                # No checksum
-                when '', '-', nil
-                # Checksum as hexstring or binary string
-                when String
-                    case val.size
-                    when s/4 then [ val ].pack('H*')
-                    when s/8 then val
-                    else raise ArgumentError,
-                               "wrong size #{val.size} for hash string #{k}"
-                    end
-                # Checksum as integer
-                when Integer
-                    raise ArgumentError if (val < 0) || (val > 2**s)
-                    [ "%0#{s/4}x" % val ].pack('H*')
-                # Oops
-                else raise ArgumentError, "unsupported hash value type"
-                end
+            [ k, case val = cksums[k]
+                 # No checksum
+                 when '', '-', nil
+                 # Checksum as hexstring or binary string
+                 when String
+                     case val.size
+                     when s/4 then [ val ].pack('H*')
+                     when s/8 then val
+                     else raise ArgumentError,
+                                "wrong size #{val.size} for hash string #{k}"
+                     end
+                 # Checksum as integer
+                 when Integer
+                     raise ArgumentError if (val < 0) || (val > 2**s)
+                     [ "%0#{s/4}x" % val ].pack('H*')
+                 # Oops
+                 else raise ArgumentError, "unsupported hash value type"
+                 end
             ]
         }].compact
 
@@ -317,6 +320,7 @@ class ROM
     #
     def same?(o, weak: true)
         return true if self.equal?(o)
+
         decidable = false
         (weak ? CHECKSUMS : CHECKSUMS_STRONG).each { |type|
             s_cksum = self.cksum(type)
@@ -351,14 +355,14 @@ class ROM
         when :checksum
             if key = CHECKSUMS.find {|k| @cksum.include?(k) }
             then cksum(key, :hex)
-            else self.name
+            else name
             end
         when :name
-            self.name
+            name
         when :entry
-            self.entry
+            entry
         else
-            self.name
+            name
         end
     end
 
@@ -378,6 +382,7 @@ class ROM
     #
     def header
         return nil unless headered?
+
         @path.reader { |io| io.read(@offset) }
     end
 
@@ -553,7 +558,7 @@ class ROM
     #
     def delete!
         if @path.delete!
-            @path == ROM::Path::Virtual.new(@path.entry)
+            @path = ROM::Path::Virtual.new(@path.entry)
         end
     end
 

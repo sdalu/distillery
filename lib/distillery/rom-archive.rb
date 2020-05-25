@@ -5,6 +5,7 @@ require 'set'
 begin
     require 'mimemagic'
 rescue LoadError
+    # That's ok, it's an optional commponent
 end
 
 require_relative 'archiver'
@@ -47,6 +48,7 @@ class ROMArchive
     #
     def self.archive?(file, archives: EXTENSIONS)
         return false if archives.nil?
+
         archives.include?(File.extname(file)[1..-1])
     end
 
@@ -97,8 +99,8 @@ class ROMArchive
     # @return [ROM]                     the assigned ROM
     #
     def []=(entry, rom)
-        @roms.merge!(entry => rom) {|key, old_rom, new_rom|
-            warn "replacing ROM entry \"#{key}\" (#{to_s})"
+        @roms.merge!(entry => rom) { |key, _old_rom, new_rom|
+            warn "replacing ROM entry \"#{key}\" (#{self})"
             new_rom
         }
         rom
@@ -121,9 +123,9 @@ class ROMArchive
     # @return [Boolean]
     #
     def ==(o)
-        o.kind_of?(ROMArchive)                                          &&
-            (self.entries.to_set == o.entries.to_set)                   &&
-            self.entries.all? {|entry| self[entry].same?(o[entry]) }
+        o.is_a?(ROMArchive)                                        &&
+        (self.entries.to_set == o.entries.to_set)                  &&
+        self.entries.all? { |entry| self[entry].same?(o[entry]) }
     end
 
 
@@ -141,7 +143,7 @@ class ROMArchive
     # @return [self,Enumerator]
     #
     def each
-        block_given? ? @roms.each_value {|r| yield(r) }
+        block_given? ? @roms.each_value { |r| yield(r) }
                      : @roms.each_value
     end
 
@@ -182,14 +184,10 @@ class ROMArchive
     #
     def delete!(entry)
         Distillery::Archiver.for(@file) do |archive|
-            if archive.delete!(entry)
-                if archive.empty?
-                    File.unlink(@file)
-                end
-                true
-            else
-                false
+            if rc = archive.delete!(entry)
+                File.unlink(@file) if archive.empty?
             end
+            rc
         end
     end
 

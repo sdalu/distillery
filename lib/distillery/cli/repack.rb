@@ -26,7 +26,7 @@ class CLI
                 }
 
             elsif @output_mode == :text
-                lambda {|file, type, &block|
+                lambda { |file, type, &block|
                     case v = block.call
                     when String
                         @io.puts "FAILED: #{file} (#{v})"
@@ -62,7 +62,7 @@ class CLI
             end
 
             # Recompress
-            decorator.(srcfile, type) {
+            decorator.call(srcfile, type) {
                 next "#{type} exists" if File.exist?(dst)
                 archive = Distillery::Archiver.for(dst)
                 Distillery::Archiver.for(phy).each do |entry, i|
@@ -86,18 +86,17 @@ class CLI
         types = ROMArchive::EXTENSIONS.to_a
         opts.banner = "Usage: #{PROGNAME} repack [options] ROMDIR..."
 
-        opts.separator ""
-        opts.separator "Repack archives to the specified format"
-        opts.separator ""
-        opts.separator "NOTE: if an archive in the new format already exists the operation"
-        
-        opts.separator "      won't be carried out" 
-        opts.separator ""
-        opts.separator "Options:"
+        opts.separator ''
+        opts.separator 'Repack archives to the specified format'
+        opts.separator ''
+        opts.separator 'NOTE: if an archive in the new format already exists the operation'
+        opts.separator '      won\'t be carried out'
+        opts.separator ''
+        opts.separator 'Options:'
         opts.on '-F', '--format=FORMAT', types,
                 "Archive format (#{ROMArchive::PREFERED})",
                 " Value: #{types.join(', ')}"
-        opts.separator ""
+        opts.separator ''
     end
 
 

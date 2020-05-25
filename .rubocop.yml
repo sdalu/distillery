@@ -1,52 +1,108 @@
 # See: https://github.com/rubocop-hq/rubocop/blob/master/config/default.yml
 
-Style/FrozenStringLiteralComment:
-  Enabled: false
-
-
 AllCops:
   TargetRubyVersion: 2.5
-
-
-Style/Encoding:
-  Enabled: false
-
-Style/HashSyntax:
-  EnforcedStyle: no_mixed_keys
-  UseHashRocketsWithSymbolValues: true
-  PreferHashRocketsForNonAlnumEndingSymbols: true
-
-  Layout/LineLength:
-  Max: 79
-
-SpaceInsideArrayLiteralBrackets:
-  EnforcedStyle: space
-  EnforcedStyleForEmptyBrackets: no_space
 
 
 Layout/EmptyLines:
   Enabled: false
 
+Layout/EmptyLinesAroundAttributeAccessor:
+  Enabled: true
+
 Layout/EmptyLinesAroundClassBody:
   Enabled: false
 
-Layout/EmptyLinesAroundMethodBody:
+Layout/EmptyLinesAroundModuleBody:
   Enabled: false
 
 Layout/EmptyLineBetweenDefs:
   NumberOfEmptyLines: 2
 
+Layout/HashAlignment:
+  Enabled: false		# doesn't seem to be working
+
 Layout/IndentationWidth:
   Width: 4
 
+Layout/LineLength:
+  Max: 80
+
+Layout/MultilineHashBraceLayout:
+  Enabled: false
+Layout/SpaceInsideArrayLiteralBrackets:
+  EnforcedStyle: space
+  EnforcedStyleForEmptyBrackets: no_space
+
 Layout/SpaceInsidePercentLiteralDelimiters:
   Enabled: false
+
+Layout/SpaceAroundMethodCallOperator:
+  Enabled: true
+
+
   
+Lint/DeprecatedOpenSSLConstant:
+  Enabled: true
+
+Lint/RaiseException:
+  Enabled: true
+
+Lint/StructNewOverride:
+  Enabled: true
+
+
 
 Metrics/MethodLength:
   Max: 15
 
 Metrics/PerceivedComplexity:
   Max: 10
+
+
+  
+Style/BlockDelimiters:
+  Enabled: false
+
+Style/ColonMethodCall:
+  Enabled: false
+
+Style/Encoding:
+  Enabled: true
+
+Style/ExponentialNotation:
+  Enabled: true
+
+Style/FrozenStringLiteralComment:
+  Enabled: false
+
+Style/HashEachMethods:
+  Enabled: true
+
+Style/HashSyntax:
+  EnforcedStyle: no_mixed_keys
+  UseHashRocketsWithSymbolValues: true
+  PreferHashRocketsForNonAlnumEndingSymbols: true
+
+Style/HashTransformKeys:
+  Enabled: true
+
+Style/HashTransformValues:
+  Enabled: true
+
+Style/SlicingWithRange:
+  Enabled: true
+
+Style/SymbolArray:
+  Enabled: false
+
+Style/TrailingCommaInHashLiteral:
+  Enabled: false
+
+Style/TrailingCommaInArrayLiteral:
+  Enabled: false
+  
+
+
 
  

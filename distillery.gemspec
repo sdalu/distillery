@@ -18,7 +18,7 @@ Gem::Specification.new do |s|
 
     s.required_ruby_version = '>= 2.5'
 
-    s.authors       = [ 'Stephane D\'Alu' ]
+    s.authors       = [ 'Stéphane D\'Alu' ]
     s.email         = [ 'sdalu@sdalu.com' ]
     s.homepage      = 'http://github.com/sdalu/distillery'
 
@@ -34,6 +34,5 @@ Gem::Specification.new do |s|
 
     s.executables   = [ 'rhum' ]
     s.files         = %w[ LICENSE README.md Gemfile distillery.gemspec ] +
-                      Dir['lib/**/*.rb'  ] +
-                      Dir['lib/**/*.yaml']
+                      Dir['lib/**/*.{rb,yaml}']
 end

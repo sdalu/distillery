@@ -24,7 +24,7 @@ class LibArchive < Archiver
 
     class InputStream < Archiver::InputStream
         def initialize(ar)
-            @read_block = ar.to_enum(:read_data, 16*1024)
+            @read_block = ar.to_enum(:read_data, 16 * 1024)
             @buffer     = StringIO.new
         end
 
@@ -88,7 +88,6 @@ class LibArchive < Archiver
         ::Archive.read_open_filename(file) do |ar|
             while (a_entry = ar.next_header)
                 next unless a_entry.regular?
-                $stdout.puts a_entry.pathname
                 yield(a_entry.pathname, InputStream.new(ar))
             end
         end

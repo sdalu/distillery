@@ -8,6 +8,7 @@ class Release
     # @!visibility private
     @@regions = Set.new
 
+
     # List all assigned region code.
     #
     # @return [Set<String>]             set of region code
@@ -29,9 +30,11 @@ class Release
         @@regions.add(region)
     end
 
+
     # Release name
     # @return [String]
     attr_reader :name
+
 
     # Region of release
     # @return [String]

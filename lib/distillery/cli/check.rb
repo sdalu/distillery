@@ -2,7 +2,6 @@
 
 module Distillery
 class CLI
-
     # Check that the ROM directories form an exact match of the DAT file
     #
     # @param datfile    [String]                DAT file
@@ -67,15 +66,15 @@ class CLI
     CheckParser = OptionParser.new do |opts|
         opts.banner = "Usage: #{PROGNAME} check [options] ROMDIR..."
 
-        opts.separator ""
-        opts.separator "Check ROMs status, and display missing or extra files."
-        opts.separator ""
-        opts.separator "Options:"
-        opts.on '-r', '--revert', "Display present files instead"
-        opts.separator ""
+        opts.separator ''
+        opts.separator 'Check ROMs status, and display missing or extra files.'
+        opts.separator ''
+        opts.separator 'Options:'
+        opts.on '-r', '--revert', 'Display present files instead'
+        opts.separator ''
     end
 
-    
+
     # Register check command
     subcommand :check, 'Check ROM status',
                CheckParser do |argv, **opts|

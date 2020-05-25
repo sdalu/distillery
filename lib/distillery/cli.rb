@@ -24,7 +24,7 @@ class CLI
     using Distillery::StringY
 
     # List of available output mode
-    OUTPUT_MODE = [ :text, :fancy, :json ]
+    OUTPUT_MODE = [ :text, :fancy, :json ].freeze
 
 
     # @!visibility private
@@ -57,37 +57,37 @@ class CLI
     GlobalParser = OptionParser.new do |opts|
         opts.banner = "Usage: #{opts.program_name} [options] CMD [opts] [args]"
 
-        opts.separator ""
-        opts.separator "Options:"
-        opts.on "-h", "--help",         "Show this message" do
+        opts.separator ''
+        opts.separator 'Options:'
+        opts.on '-h', '--help',         "Show this message" do
             puts opts
-            puts ""
-            puts "Commands:"
-            @@subcommands.each {|name, (desc, *) |
-                puts "    %-12s %s" % [ name, desc ]
+            puts ''
+            puts 'Commands:'
+            @@subcommands.each { |name, (desc, *)|
+                puts '    %-12s %s' % [ name, desc ]
             }
-            puts ""
+            puts ''
             puts "See '#{opts.program_name} CMD --help'"                \
                  " for more information on a specific command"
-            puts ""
+            puts ''
             exit
         end
 
-        opts.on "-V", "--version",      "Show version" do
-            puts opts.ver()
+        opts.on '-V', '--version',      "Show version" do
+            puts opts.ver
             exit
         end        
 
-        opts.separator ""
-        opts.separator "Global options:"
-        opts.on "-o", "--output=FILE",                   "Output file"
-        opts.on "-m", "--output-mode=MODE", OUTPUT_MODE,
+        opts.separator ''
+        opts.separator 'Global options:'
+        opts.on '-o', '--output=FILE',                   "Output file"
+        opts.on '-m', '--output-mode=MODE', OUTPUT_MODE,
                 "Output mode (#{OUTPUT_MODE.first})",
                 " Value: #{OUTPUT_MODE.join(', ')}"
-        opts.on "-d", "--dat=FILE",                      "DAT file"
-        opts.on "-I", "--index=FILE",                    "Index file"
-        opts.on "-D", "--destdir=DIR",                   "Destination directory"
-        opts.on "-f", "--force",                         "Force operation"
+        opts.on '-d', '--dat=FILE',                      "DAT file"
+        opts.on '-I', '--index=FILE',                    "Index file"
+        opts.on '-D', '--destdir=DIR',                   "Destination directory"
+        opts.on '-f', '--force',                         "Force operation"
         opts.on '-p', '--[no-]progress',                 "Show progress"
         opts.on '-v', '--[no-]verbose',                  "Run verbosely"
     end

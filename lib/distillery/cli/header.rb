@@ -35,11 +35,11 @@ class CLI
     HeaderParser = OptionParser.new do |opts|
         opts.banner = "Usage: #{PROGNAME} index ROMDIR..."
 
-        opts.separator ""
-        opts.separator "Extract ROM embedded header"
-        opts.separator ""
-        opts.separator "Options:"
-        opts.separator ""
+        opts.separator ''
+        opts.separator 'Extract ROM embedded header'
+        opts.separator ''
+        opts.separator 'Options:'
+        opts.separator ''
     end
 
 

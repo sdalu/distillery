@@ -17,7 +17,7 @@ class CLI
         count      = { :not_found     => 0,
                        :name_mismatch => 0,
                        :wrong_place   => 0 }
-        summarizer = lambda {|io|
+        summarizer = lambda { |io|
             io.puts
             io.puts "Not found     : #{count[:not_found    ]}"
             io.puts "Name mismatch : #{count[:name_mismatch]}"
@@ -45,7 +45,7 @@ class CLI
         }
 
         if @output_mode == :fancy
-            dat.each_game {|game|
+            dat.each_game { |game|
                 s_width    = TTY::Screen.width
                 r_width    = s_width - 25
                 g_width    = s_width - 10
@@ -108,7 +108,7 @@ class CLI
             @io.puts dat.each_game.map { |game|
                 { :game => game.name,
                   :roms => game.each_rom.map { |rom|
-                      case v = checker.(game, rom)
+                      case v = checker.call(game, rom)
                       when String, nil then [ game.name, rom, v ]
                       else raise Assert
                       end
@@ -135,12 +135,12 @@ class CLI
     ValidateParser = OptionParser.new do |opts|
         opts.banner = "Usage: #{PROGNAME} validate [options] ROMDIR..."
 
-        opts.separator ""
-        opts.separator "Validate ROMs according to DAT file"
-        opts.separator ""
-        opts.separator "Options:"
+        opts.separator ''
+        opts.separator 'Validate ROMs according to DAT file'
+        opts.separator ''
+        opts.separator 'Options:'
         opts.on '-s', '--summarize', "Summarize results"
-        opts.separator ""
+        opts.separator ''
     end
 
 

@@ -36,6 +36,7 @@ class Archiver
             @io = io
         end
 
+
         # Read data
         #
         # @param length [Integer, nil]  number of bytes to read,
@@ -47,6 +48,7 @@ class Archiver
             @io.read(length)
         end
     end
+
 
     # OutputStream used by Archiver#writer
     class OutputStream
@@ -162,19 +164,19 @@ class Archiver
         @@archivers.add(archiver)
 
         # Register mimetypes
-        Array(archiver.mimetypes).each {|mt|
+        Array(archiver.mimetypes).each do |mt|
             @@mimetypes.merge!(mt => archiver) do |key, old, new|
                 notify&.call('mimetype', key, old, new)
                 new
             end
-        }
+        end
         # Register extensions
-        Array(archiver.extensions).each {|ext|
+        Array(archiver.extensions).each do |ext|
             @@extensions.merge!(ext.downcase => archiver) do |key, old, new|
                 notify&.call('extension', key, old, new)
                 new
             end
-        }
+        end
         # Return archiver
         archiver
     end
@@ -215,16 +217,18 @@ class Archiver
         # Find by extension
         parts      = File.basename(file).split('.')
         extlist    = 1.upto(parts.size - 1).map { |i| parts[i..-1].join('.') }
-        archiver   = extlist.lazy.map  {|ext| self.for_extension(ext) }
-                                 .find {|arc| !arc.nil?               }
+        archiver   = extlist.lazy.map  { |ext| self.for_extension(ext) }
+                                 .find { |arc| !arc.nil?               }
 
         # Find by mimetype if previously failed
         archiver ||= if defined?(MimeMagic)
                          begin
-                             File.open(file) {|io|
+                             File.open(file, File::RDONLY) do |io|
                                  self.for_mimetype(MimeMagic.by_magic(io))
-                             }
+                             end
                          rescue Errno::ENOENT
+                             # File doesn't exists
+                             # => unable to infer archiver
                          end
                      end
 
@@ -334,10 +338,8 @@ class Archiver
     # @return                           block value
     #
     def reader(file, entry)
-        each(file) do |a_entry, a_io|
-            next unless a_entry == entry
-            return yield(a_io)
-        end
+        _, a_io = each(file).find { |a_entry, _| a_entry == entry }
+        yield(a_io) if a_io
     end
 
 
