@@ -84,9 +84,9 @@ class CLI
         opts.on '-m', '--output-mode=MODE', OUTPUT_MODE,
                 "Output mode (#{OUTPUT_MODE.first})",
                 " Value: #{OUTPUT_MODE.join(', ')}"
-        opts.on '-d', '--dat=FILE',                      "DAT file"
+        opts.on '-D', '--dat=FILE',                      "DAT file"
         opts.on '-I', '--index=FILE',                    "Index file"
-        opts.on '-D', '--destdir=DIR',                   "Destination directory"
+        opts.on '-d', '--destdir=DIR',                   "Destination directory"
         opts.on '-f', '--force',                         "Force operation"
         opts.on '-p', '--[no-]progress',                 "Show progress"
         opts.on '-v', '--[no-]verbose',                  "Run verbosely"

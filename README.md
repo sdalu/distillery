@@ -22,5 +22,5 @@ rhum repack -F 7z ${rom_directory}
 rhum index ${rom_directory}
 
 # Save ROM header to the specified directory
-rhum -D ${header_dir} header ${rom_directory}
+rhum -d ${header_dir} header ${rom_directory}
 ~~~
