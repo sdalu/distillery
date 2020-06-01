@@ -5,7 +5,7 @@ class CLI
 
     def rebuild(gamedir, datfile, romdirs)
         dat     = make_dat(datfile)
-        storage = make_storage(*romdirs)
+        storage = make_storage(romdirs)
 
         # gamedir can be one of the romdir we must find a clever
         # way to avoid overwriting file
