@@ -114,16 +114,18 @@ class CLI
                       end
                       { :rom     => rom.path.entry,
                         :success => v.nil?,
-                        :reason  => v
+                        :errmsg  => v
                       }.compact
                   }
                 }
             }.to_json
-        else
 
+        # That's unexpected
+        else
             raise Assert
         end
 
+        # Allows chaining
         self
     end
 
@@ -140,6 +142,14 @@ class CLI
         opts.separator ''
         opts.separator 'Options:'
         opts.on '-s', '--summarize', "Summarize results"
+        opts.separator ''
+        opts.separator 'JSON output:'
+        opts.separator '  [ { game: "<game name>",'
+        opts.separator '      roms: [ {     rom: "<rom name>",'
+        opts.separator '                success: <true,false>, '
+        opts.separator '                 errmsg: "<error message>" },'
+        opts.separator '              ... ] },'
+        opts.separator '    ... ]'
         opts.separator ''
     end
 
