@@ -24,6 +24,7 @@ class CLI
             File.write(file, header)
         end
 
+        # Allows chaining
         self
     end
 
@@ -33,10 +34,14 @@ class CLI
 
     # Parser for header command
     HeaderParser = OptionParser.new do |opts|
-        opts.banner = "Usage: #{PROGNAME} index ROMDIR..."
+        opts.banner = "Usage: #{PROGNAME} header [options] ROMDIR..."
 
         opts.separator ''
-        opts.separator 'Extract ROM embedded header'
+        opts.separator 'Extract embedded header from ROM.'
+        opts.separator 'Headers for the following systems are supported:'
+        ROM::HEADERS.map { |name:, **| name }.uniq.sort.each do |name|
+            opts.separator "  - #{name}"
+        end
         opts.separator ''
         opts.separator 'Options:'
         opts.separator ''
