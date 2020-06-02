@@ -45,7 +45,9 @@ class Storage
 
     def build_roms_directory(dest, pristine: false, force: false, delete: false)
         block = if delete
-                    proc { |rom| rom.delete! }
+                    proc { |rom, copied:, **|
+                        rom.delete! if copied
+                    }
                 end
         @roms.save(dest,
                    part: :rom, subdir: true, pristine: pristine, force: force,

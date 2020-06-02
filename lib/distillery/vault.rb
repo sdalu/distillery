@@ -350,15 +350,17 @@ class Vault
     end
 
 
-    # Save ROM to filesystem
+    # Save ROM to filesystem using hash as name.
     #
     # @param dir      [String]          directory used for saving
-    # @param part   [:all,:header,:rom] wich part of the ROM file to save
+    # @param part   [:all,:header,:rom] which part of the ROM file to save
     # @param subdir   [Boolean,Integer,Proc] use subdirectory
     # @param pristine [Boolean]         should existing directory be removed
     # @param force    [Boolean]         remove previous file if necessary
     #
     # @yieldparam rom [ROM]             ROM saved
+    # @yieldparam copied: [Boolean]     was the copy performed
+    # @yieldparam as: [String]          name used to save content
     #
     # @return [self]
     #
@@ -394,11 +396,13 @@ class Vault
 
             # If the file exist, it is the right file, as it is
             # named from it's hash (ie: content)
-            if force || !File.exist?(dest)
-                rom.copy(dest, part: part, force: force)
-            end
+            copied = if force || !File.exist?(dest)
+                         rom.copy(dest, part: part, force: force)
+                     else
+                         false
+                     end
 
-            yield(rom) if block_given?
+            yield(rom, as: dest, copied: copied) if block_given?
         end
 
         self
