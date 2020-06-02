@@ -101,6 +101,7 @@ class CLI
         @progress    = true
         @output_mode = OUTPUT_MODE.first
         @io          = $stdout
+        @force       = false
     end
 
 
@@ -138,6 +139,9 @@ class CLI
         end
         if opts.include?(:'output-mode')
             @output_mode = opts[:'output-mode']
+        end
+        if opts.include?(:force)
+            @force = opts[:force]
         end
 
         # Sanitize
