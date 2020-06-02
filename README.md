@@ -19,7 +19,9 @@ rhum -D ${datfile} validate ${rom_directory}
 rhum repack -F 7z ${rom_directory}
 
 # Generate checksum index
-rhum index ${rom_directory}
+rhum index ${rom_directory}             # text mode (only 1 checksum)
+rhum -m yaml index ${rom_directory}     # structured mode (recommanded)
+
 
 # Save ROM header to the specified directory
 rhum -d ${header_dir} header ${rom_directory}

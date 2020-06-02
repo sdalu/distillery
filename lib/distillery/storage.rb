@@ -30,15 +30,15 @@ class Storage
     end
 
 
-    def index(type = nil, separator = nil)
-        type ||= ROM::FS_CHECKSUM
+    def index(separator = nil)
         each.map { |rom|
-            hash = rom.cksum(type, :hex)
-            file = case path = rom.path
-                   when ROM::Path::Archive then path.to_s(separator)
-                   else                         path.to_s
-                   end
-            [ hash, file ]
+            cksums = rom.cksums(:hex)
+            file   = case path = rom.path
+                     when ROM::Path::Archive then path.to_s(separator)
+                     else                         path.to_s
+                     end
+            [ file, cksums.merge(:size     => rom.size,
+                                 :headered => rom.headered?) ]
         }
     end
 
