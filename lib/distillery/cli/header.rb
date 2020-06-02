@@ -11,21 +11,59 @@ class CLI
     # @return [self]
     #
     def header(hdrdir, romdirs)
-        storage = make_storage(romdirs)
-        storage.roms.select(&:headered?).each do |rom|
-            file   = File.join(hdrdir, rom.fshash)
-            header = rom.header
-            if File.exist?(file)
-                if header != File.binread(file)
-                    warn "different header exists : #{rom.fshash}"
+        enum = enum_for(:_header, hdrdir, romdirs)
+
+        case @output_mode
+        # Text output
+        when :text
+            enum.each do |rom, copied:, **|
+                if copied
+                    @io.puts "- #{rom}"
+                elsif rom.headered?
+                    @io.puts "- #{rom} (copy failed)"
+                elsif @verbose
+                    @io.puts "- #{rom} (no header)"
                 end
-                next
             end
-            File.write(file, header)
+
+        # Fancy output
+        when :fancy
+            enum.each do |rom, copied:, **|
+                spinner = TTY::Spinner.new("[:spinner] :rom",
+                                           :hide_cursor => true,
+                                           :output      => @io)
+                spinner.update(:rom => rom.to_s)
+                if copied           then spinner.success
+                elsif rom.headered? then spinner.error('(copy failed)')
+                elsif @verbose      then spinner.error('(no header)')
+                else                     spinner.reset
+                end
+            end
+            
+        # JSON output
+        when :json
+            data = enum.map { |rom, as:, copied:, ** |
+                { :rom     => rom.to_s,
+                  :success => copied,
+                  :reason  => if copied
+                              elsif rom.headered? then 'copy failed'
+                              else                     'no header'
+                              end,
+                  :name    => File.basename(as),
+                }.compact
+            }
+            @io.puts data.to_json
         end
 
         # Allows chaining
         self
+    end
+
+    def _header(hdrdir, romdirs)
+        make_storage(romdirs).roms
+          .save(hdrdir, part: :header, force: @force) do |rom, as:, copied:, **|
+            yield(rom, as: as, copied: copied)
+        end
     end
 
 
@@ -43,7 +81,12 @@ class CLI
             opts.separator "  - #{name}"
         end
         opts.separator ''
-        opts.separator 'Options:'
+        opts.separator 'JSON output:'
+        opts.separator '  [ {     rom: "<rom name>",'
+        opts.separator '      success: <true,false>, '
+        opts.separator '       reason: "<error message>",'
+        opts.separator '         name: "<destination name>" },'
+        opts.separator '    ... ]'
         opts.separator ''
     end
 
