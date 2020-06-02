@@ -58,6 +58,7 @@ class CLI
         opts.separator 'only the selected checksum is present.'
         opts.separator 'Note: checksums are not computed on header part.'
         opts.separator ''
+
         opts.separator 'Options:'
         opts.on '-c', '--cksum=CHECKSUM', ROM::CHECKSUMS,
                 "Checksum used for indexing (#{ROM::FS_CHECKSUM})",
@@ -65,10 +66,14 @@ class CLI
         opts.on '-S', '--separator=CHAR', String,
                 "Separator for archive entry (#{ROM::Path::Archive.separator})"
         opts.separator ''
+
         opts.separator 'Structured output:'
-        opts.separator '  [ { sha256: "<hexstring>",' '        sha1: "<hexstring>",'
-        opts.separator '         md5: "<hexstring>",' '       crc32: "<hexstring>",'
-        opts.separator '        size: <size>,       ' '    headered: <true>       }'
+        opts.separator '  [ { sha256: "<hexstring>",'                   \
+                       '        sha1: "<hexstring>",'
+        opts.separator '         md5: "<hexstring>",'                   \
+                       '       crc32: "<hexstring>",'
+        opts.separator '        size: <size>,       '                   \
+                       '    headered: <true>       }'
         opts.separator '    ... ]'
         opts.separator ''
     end

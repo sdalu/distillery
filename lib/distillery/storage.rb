@@ -32,11 +32,11 @@ class Storage
 
     def index(separator = nil)
         each.map { |rom|
-            cksums = rom.cksums(:hex)
             file   = case path = rom.path
                      when ROM::Path::Archive then path.to_s(separator)
                      else                         path.to_s
                      end
+            cksums = rom.cksums(:hex)
             data   = cksums.merge(:size     => rom.size,
                                   :headered => rom.headered? || nil).compact
             [ file,  data ]
