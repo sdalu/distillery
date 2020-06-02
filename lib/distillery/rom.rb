@@ -36,14 +36,15 @@ class ROM
         { :name   => 'Atary Lynx',
           :ext    => 'lnx',
           :rules  => [ [ 0, 'LYNX' ] ],
-          :offset => 40,
+          :offset => 64,
         },
         # Atari    : 7800
+        # http://7800.8bitdev.org/index.php/A78_Header_Specification
         { :name   => 'Atari 7800',
           :ext    => 'a78',
           :rules  => [ [  1, 'ATARI7800' ],
-                       [ 60, "\x00\x00\x00\x00ACTUAL CART DATA STARTS HERE" ] ],
-          :offset => 80,
+                       [ 96, "\x00\x00\x00\x00ACTUAL CART DATA STARTS HERE" ] ],
+          :offset => 128,
         },
     ]
 
