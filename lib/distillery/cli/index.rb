@@ -68,7 +68,7 @@ class CLI
         opts.separator 'Structured output:'
         opts.separator '  [ { sha256: "<hexstring>",' '        sha1: "<hexstring>",'
         opts.separator '         md5: "<hexstring>",' '       crc32: "<hexstring>",'
-        opts.separator '        size: <size>,       ' '    headered: <true,false> }'
+        opts.separator '        size: <size>,       ' '    headered: <true>       }'
         opts.separator '    ... ]'
         opts.separator ''
     end

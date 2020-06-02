@@ -37,8 +37,9 @@ class Storage
                      when ROM::Path::Archive then path.to_s(separator)
                      else                         path.to_s
                      end
-            [ file, cksums.merge(:size     => rom.size,
-                                 :headered => rom.headered?) ]
+            data   = cksums.merge(:size     => rom.size,
+                                  :headered => rom.headered? || nil).compact
+            [ file,  data ]
         }
     end
 
