@@ -11,6 +11,9 @@ class CLI
 
         extra.save(savedir) if savedir
         extra.each(&:delete!)
+
+        # Allows chaining
+        self
     end
 
 
@@ -24,9 +27,6 @@ class CLI
         opts.separator ''
         opts.separator 'Remove content not referenced in DAT file'
         opts.separator ''
-        opts.separator 'Options:'
-        opts.on '-s', '--summarize', "Summarize results"
-        opts.separator ''
     end
 
     # Register clean command
@@ -36,8 +36,8 @@ class CLI
         if opts[:dat].nil? && (opts[:romdirs].size == 1)
             opts[:dat] = File.join(opts[:romdirs].first, '.dat')
         end
-        if opts[:savedir].nil? && (opts[:romdirs].size == 1)
-            opts[:savedir] = File.join(opts[:romdirs].first, '.trash')
+        if opts[:destdir].nil? && (opts[:romdirs].size == 1)
+            opts[:destdir] = File.join(opts[:romdirs].first, '.trash')
         end
 
         if opts[:dat].nil?
@@ -48,12 +48,12 @@ class CLI
             warn "missing ROM directory"
             exit
         end
-        if opts[:savedir].empty?
+        if opts[:destdir].empty?
             warn "missing save directory"
             exit
         end
 
-        [ opts[:dat], opts[:romdirs], savedir: opts[:savedir] ]
+        [ opts[:dat], opts[:romdirs], savedir: opts[:destdir] ]
     end
 
 end
