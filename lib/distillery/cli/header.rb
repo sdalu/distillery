@@ -37,8 +37,8 @@ class CLI
                 end
             end
             
-        # JSON output
-        when :json
+        # JSON/YAML output
+        when :json, :yaml
             data = enum.map { |rom, as:, copied:, **|
                 { :rom    => rom.to_s,
                   :error  => if    copied        then nil
@@ -48,13 +48,19 @@ class CLI
                   :name   => File.basename(as),
                 }.compact
             }
-            @io.puts data.to_json
+            @io.puts to_structured_output(data)
+
+        # That's unexpected
+        else
+            raise Assert
         end
 
         # Allows chaining
         self
     end
 
+
+    # @!visibility private
     def _header(hdrdir, romdirs)
         make_storage(romdirs).roms
           .save(hdrdir, part: :header, force: @force) do |rom, as:, copied:, **|
@@ -77,7 +83,8 @@ class CLI
             opts.separator "  - #{name}"
         end
         opts.separator ''
-        opts.separator 'JSON output:'
+
+        opts.separator 'Structured output:'
         opts.separator '  [ {     rom: "<rom name>",'
         opts.separator '         name: "<destination name>",'
         opts.separator '       ?error: "<error message>" },'
