@@ -7,39 +7,64 @@ module Distillery
 class CLI
     using Distillery::StringY
 
+    # Repack archives.
+    #
+    # @param romdirs    [Array<String>]         ROMs directories
+    # @param type       [String]                Archive type
+    #
+    # @return [self]
+    #
     def repack(romdirs, type = nil)
-        type    ||= ROMArchive::PREFERED
+        # Select archive type if not specified
+        type      ||= ROMArchive::PREFERED
 
-        decorator =
+        # Build support for the various output mode
+        accumulator = []
+        decorator   =
+            # Fancy mode
             if @output_mode == :fancy
-                lambda {|file, type, &block|
+                lambda { |file, type, &block|
                     spinner = TTY::Spinner.new('[:spinner] :file',
                                                :hide_cursor => true,
                                                :output      => @io)
                     width = TTY::Screen.width - 8
                     spinner.update(:file => file.ellipsize(width, :middle))
                     spinner.auto_spin
-                    case v = block.call
-                    when String then spinner.error("(#{v})")
+                    case errmsg = block.call
+                    when String then spinner.error("(#{errmsg})")
                     else             spinner.success("-> #{type}")
                     end
                 }
-
+            # Text mode
             elsif @output_mode == :text
                 lambda { |file, type, &block|
-                    case v = block.call
+                    case errmsg = block.call
                     when String
-                        @io.puts "FAILED: #{file} (#{v})"
+                        @io.puts "FAILED: #{file} (#{errmsg})"
+                    else
                         @io.puts "OK    : #{file} -> #{type}" if @verbose
                     end
                 }
-
+            # JSON mode
+            elsif @output_mode == :json
+                lambda { |file, type, &block|
+                    errmsg = block.call
+                    accumulator << { :file   => file,
+                                     :error  => errmsg,
+                                   }.compact
+                }
+            # That's unexpected
             else
-
                 raise Assert
             end
+        finalizer   =
+            if @output_mode == :json
+                lambda {
+                    @io.puts accumulator.to_json
+                }
+            end
 
-
+        # Perform re-packing
         from_romdirs(romdirs) do |srcfile, dir:|
             # Destination file according to archive type
             dstfile  = srcfile.dup
@@ -61,7 +86,7 @@ class CLI
                 phy     = src
             end
 
-            # Recompress
+            # Re-compress
             decorator.call(srcfile, type) {
                 next "#{type} exists" if File.exist?(dst)
                 archive = Distillery::Archiver.for(dst)
@@ -75,6 +100,12 @@ class CLI
                 File.unlink(phy)
             }
         end
+
+        # Apply finalizer if required (for json)
+        finalizer&.call()
+
+        # Allows chaining
+        self
     end
 
 
@@ -87,15 +118,18 @@ class CLI
         opts.banner = "Usage: #{PROGNAME} repack [options] ROMDIR..."
 
         opts.separator ''
-        opts.separator 'Repack archives to the specified format'
-        opts.separator ''
-        opts.separator 'NOTE: if an archive in the new format already exists the operation'
-        opts.separator '      won\'t be carried out'
+        opts.separator 'Repack archives to the specified format.'
+        opts.separator 'If another archive is in the way the '		\
+                       'operation won\'t be carried out.'
         opts.separator ''
         opts.separator 'Options:'
         opts.on '-F', '--format=FORMAT', types,
                 "Archive format (#{ROMArchive::PREFERED})",
                 " Value: #{types.join(', ')}"
+        opts.separator ''
+        opts.separator 'JSON output:'
+        opts.separator '  [ { file: "<file>", ?error: "<error message>" },'
+        opts.separator '    ... ]'
         opts.separator ''
     end
 
