@@ -7,25 +7,38 @@ class CLI
     #
     # @param romdirs    [Array<String>]         ROMs directories
     # @param type       [Symbol,nil]            type of checksum to use
+    # @param separator  [String]		archive entry separator
     #
     # @return [self]
     #
     def index(romdirs, type: nil, separator: nil)
-        list = make_storage(romdirs).index(type, separator)
+        enum = enum_for(:_index, romdirs, type: type, separator: separator)
 
-        if (@output_mode == :fancy) || (@output_mode == :text)
-            list.each do |hash, path|
+        case @output_mode
+        # Text/Fancy output
+        when :text, :fancy
+            enum.each do |hash, path|
                 @io.puts "#{hash} #{path}"
             end
 
-        elsif @output_mode == :json
-            @io.puts Hash[list.each.to_a].to_json
+        # JSON output
+        when :json
+            @io.puts Hash[enum.to_a].to_json
 
+        # That's unexpected
         else
             raise Assert
         end
 
+        # Allows chaining
         self
+    end
+
+
+    def _index(romdirs, type: nil, separator: nil)
+        make_storage(romdirs).index(type, separator).each do |hash, path|
+            yield(hash, path)
+        end
     end
 
 
@@ -37,7 +50,7 @@ class CLI
         opts.banner = "Usage: #{PROGNAME} index [options] ROMDIR..."
 
         opts.separator ''
-        opts.separator 'Generate hash index'
+        opts.separator 'Generate hash index.'
         opts.separator ''
         opts.separator 'Options:'
         opts.on '-c', '--cksum=CHECKSUM', ROM::CHECKSUMS,
