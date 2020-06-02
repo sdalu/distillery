@@ -6,6 +6,7 @@ class CLI
     #
     # @param datfile    [String]                DAT file
     # @param romdirs    [Array<String>]         ROMs directories
+    # @param revert	[Boolean]		Display present ROMs instead
     #
     # @return [self]
     #
@@ -55,6 +56,7 @@ class CLI
             @io.puts '==> PERFECT'
         end
 
+        # Allows chaining
         self
     end
 
