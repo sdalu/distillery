@@ -113,8 +113,7 @@ class CLI
                       else raise Assert
                       end
                       { :rom     => rom.path.entry,
-                        :success => v.nil?,
-                        :errmsg  => v
+                        :error   => v
                       }.compact
                   }
                 }
@@ -146,8 +145,7 @@ class CLI
         opts.separator 'JSON output:'
         opts.separator '  [ { game: "<game name>",'
         opts.separator '      roms: [ {     rom: "<rom name>",'
-        opts.separator '                success: <true,false>, '
-        opts.separator '                 errmsg: "<error message>" },'
+        opts.separator '                ?error: "<error message>" },'
         opts.separator '              ... ] },'
         opts.separator '    ... ]'
         opts.separator ''

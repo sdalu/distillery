@@ -40,13 +40,12 @@ class CLI
         # JSON output
         when :json
             data = enum.map { |rom, as:, copied:, **|
-                { :rom     => rom.to_s,
-                  :success => copied,
-                  :reason  => if    copied
-                              elsif rom.headered? then 'copy failed'
-                              else                     'no header'
-                              end,
-                  :name    => File.basename(as),
+                { :rom    => rom.to_s,
+                  :error  => if    copied        then nil
+                             elsif rom.headered? then 'copy failed'
+                             else                     'no header'
+                             end,
+                  :name   => File.basename(as),
                 }.compact
             }
             @io.puts data.to_json
@@ -80,9 +79,8 @@ class CLI
         opts.separator ''
         opts.separator 'JSON output:'
         opts.separator '  [ {     rom: "<rom name>",'
-        opts.separator '      success: <true,false>, '
-        opts.separator '       reason: "<error message>",'
-        opts.separator '         name: "<destination name>" },'
+        opts.separator '         name: "<destination name>",'
+        opts.separator '       ?error: "<error message>" },'
         opts.separator '    ... ]'
         opts.separator ''
     end
