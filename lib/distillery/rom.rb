@@ -446,6 +446,17 @@ class ROM
     end
 
 
+    # Get ROM offset in bytes.
+    # Usually you want to use #headered? instead
+    #
+    # @return [Integer]         ROM offset in bytes
+    # @return [nil]             ROM has no offset
+    #
+    def offset
+        @offset
+    end
+
+
     # Get ROM size in bytes.
     #
     # @return [Integer]         ROM size in bytes
