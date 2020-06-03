@@ -37,8 +37,10 @@ class Storage
                      else                         path.to_s
                      end
             cksums = rom.cksums(:hex)
-            data   = cksums.merge(:size     => rom.size,
-                                  :headered => rom.headered? || nil).compact
+            mtime  = File.mtime(rom.path.storage).strftime('%F %T.%N %Z')
+            data   = cksums.merge(:size      => rom.size,
+                                  :timestamp => mtime,
+                                  :headered  => rom.headered? || nil).compact
             [ file,  data ]
         }
     end
