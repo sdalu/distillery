@@ -104,8 +104,8 @@ class CLI
                 }
             }
 
-        elsif @output_mode == :json
-            @io.puts dat.each_game.map { |game|
+        elsif (@output_mode == :json) || (@output_mode == :yaml)
+            data = dat.each_game.map { |game|
                 { :game => game.name,
                   :roms => game.each_rom.map { |rom|
                       case v = checker.call(game, rom)
@@ -117,7 +117,8 @@ class CLI
                       }.compact
                   }
                 }
-            }.to_json
+            }
+            @io.puts to_structured_output(data)
 
         # That's unexpected
         else
@@ -139,10 +140,12 @@ class CLI
         opts.separator ''
         opts.separator 'Validate ROMs according to DAT file'
         opts.separator ''
+
         opts.separator 'Options:'
         opts.on '-s', '--summarize', "Summarize results"
         opts.separator ''
-        opts.separator 'JSON output:'
+
+        opts.separator 'Structured output:'
         opts.separator '  [ { game: "<game name>",'
         opts.separator '      roms: [ {     rom: "<rom name>",'
         opts.separator '                ?error: "<error message>" },'
