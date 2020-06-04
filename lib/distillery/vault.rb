@@ -28,13 +28,14 @@ class Vault
     #   .missing : list of missing ROMs
     #   .baddump : list of baddump ROMs
     #   .extra   : list of extra ROMs
-    IGNORE_FILES = Set[ '.dat', '.index', '.missing', '.baddump', '.extra' ]
+    IGNORE_FILES = Set[ '.dat', '.index',
+                        '.missing', '.baddump', '.extra' ].freeze
 
     # List of directories to be ignored
-    IGNORE_DIRS  = Set[ '.roms', '.games', '.trash' ]
+    IGNORE_DIRS  = Set[ '.roms', '.games', '.trash' ].freeze
 
     # Directory pruning
-    DIR_PRUNING  = Set[ '.dat' ]
+    DIR_PRUNING  = Set[ '.dat' ].freeze
 
 
     # Potential ROM from directory.
