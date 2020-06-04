@@ -376,10 +376,11 @@ class ROM
 
     # Does this ROM have an header?
     #
-    # @return [Boolean]
+    # @return [Boolean]		Header present?
+    # @return [nil]		ROM as not enough information
     #
     def headered?
-        !@offset.nil? && @offset.positive?
+        @offset&.positive?
     end
 
 
