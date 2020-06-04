@@ -341,12 +341,13 @@ class ROM
     end
 
 
-    # Check if ROM hold content
+    # Check if ROM is virtual (no physical storage).
+    # Usually storage is in a file or an archive file.
     #
     # @return [Boolean]
     #
-    def has_content?
-        !@path.storage.nil?
+    def virtual?
+        @path.storage.nil?
     end
 
 

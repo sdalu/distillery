@@ -377,8 +377,7 @@ class Vault
         # Fill directory.
         # -> We have the physical ROMs, so we have all the checksums
         #    except if the file is an header without rom content
-        @roms.select { |rom| rom.has_content? && !rom.fshash.nil? }
-             .each  do |rom|
+        @roms.reject(&:virtual?).each do |rom|
             hash    = rom.fshash
             destdir = dir
             dirpart = case subdir
