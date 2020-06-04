@@ -520,14 +520,14 @@ class ROM
     end
 
 
-    # Are some checksums missing?
+    # Are all listed checksums defined?
     #
     # @param checksums [Array<Symbol>] list of checksums to consider
     #
     # @return [Boolean]
     #
-    def missing_checksums?(checksums = CHECKSUMS_DAT)
-        @cksum.keys != checksums
+    def checksums?(checksums = CHECKSUMS_DAT)
+        (@cksum.keys & checksums) == checksums
     end
 
 

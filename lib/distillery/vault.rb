@@ -284,7 +284,7 @@ class Vault
     # @return [Array<ROM>,nil]
     #
     def with_partial_checksum
-        @roms.select(&:missing_checksums?)
+        @roms.reject(&:checksums?)
     end
 
 
