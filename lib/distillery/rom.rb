@@ -144,7 +144,8 @@ class ROM
     #
     # @raise [HeaderLookupError]        sample is too short
     #
-    # @return [Integer,nil]             ROM offset
+    # @return [Integer]                 Header size
+    # @return [nil]                     No header found
     #
     def self.headered?(data, ext: nil, headers: HEADERS)
         # Normalize
@@ -162,6 +163,7 @@ class ROM
 
         hdr&.[](:offset)
     end
+
 
     # Copy file, possibly using link if requested.
     #
@@ -251,9 +253,10 @@ class ROM
 
     # Create ROM representation.
     #
-    # @param path [ROM::Path]                   rom path
-    # @param size [Integer] size                rom size
-    # @param offset [Integer,nil]               rom start (if headered)
+    # @param  path   [ROM::Path]                rom path
+    # @param  size   [Integer]                  rom size
+    # @param  offset [Integer,nil]              rom start (if headered)
+    # @option cksums [String,Integer] :sha256   rom checksum using sha256
     # @option cksums [String,Integer] :sha1     rom checksum using sha1
     # @option cksums [String,Integer] :md5      rom checksum using md5
     # @option cksums [String,Integer] :crc32    rom checksum using crc32
@@ -386,7 +389,8 @@ class ROM
 
     # Get ROM header
     #
-    # @return [String]
+    # @return [String]		ROM header
+    # @return [nil]		ROM as no header or not enough information
     #
     def header
         return nil unless headered?
@@ -439,7 +443,8 @@ class ROM
 
     # Checksum to be used for naming on filesystem
     #
-    # @return [String]          checksum hexstring
+    # @return [String]          Checksum hexstring
+    # @return [nil]		ROM has not enough information
     #
     def fshash
         cksum(FS_CHECKSUM, :hex)
@@ -450,7 +455,7 @@ class ROM
     # Usually you want to use #headered? instead
     #
     # @return [Integer]         ROM offset in bytes
-    # @return [nil]             ROM has no offset
+    # @return [nil]             ROM has not enough information
     #
     def offset
         @offset
@@ -460,7 +465,7 @@ class ROM
     # Get ROM size in bytes.
     #
     # @return [Integer]         ROM size in bytes
-    # @return [nil]             ROM has no size
+    # @return [nil]		ROM has not enough information
     #
     def size
         @size
@@ -480,7 +485,8 @@ class ROM
 
     # Get ROM sha256 as hexadecimal string (if defined)
     #
-    # @return [String,nil]      hexadecimal checksum value
+    # @return [String]          hexadecimal checksum value
+    # @return [nil]		ROM has not enough information
     #
     def sha256
         cksum(:sha256, :hex)
@@ -489,7 +495,8 @@ class ROM
 
     # Get ROM sha1 as hexadecimal string (if defined)
     #
-    # @return [String,nil]      hexadecimal checksum value
+    # @return [String]          Checksum hexstring
+    # @return [nil]		ROM has not enough information
     #
     def sha1
         cksum(:sha1, :hex)
@@ -498,7 +505,8 @@ class ROM
 
     # Get ROM md5 as hexadecimal string (if defined)
     #
-    # @return [String,nil]      hexadecimal checksum value
+    # @return [String]          Checksum hexstring
+    # @return [nil]		ROM has not enough information
     #
     def md5
         cksum(:md5, :hex)
@@ -507,7 +515,8 @@ class ROM
 
     # Get ROM crc32 as hexadcimal string (if defined)
     #
-    # @return [String,nil]      hexadecimal checksum value
+    # @return [String]          Checksum hexstring
+    # @return [nil]		ROM has not enough information
     #
     def crc32
         cksum(:crc32, :hex)
