@@ -12,6 +12,8 @@ require_relative 'archiver'
 require_relative 'archiver/external'
 require_relative 'archiver/zip'
 require_relative 'rom'
+require_relative 'rom/path'
+require_relative 'rom/path/archive'
 
 Distillery::Archiver.registering
 

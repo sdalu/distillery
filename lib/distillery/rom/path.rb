@@ -103,9 +103,3 @@ end
 
 end
 end
-
-
-
-require_relative 'path/virtual'
-require_relative 'path/archive'
-require_relative 'path/file'

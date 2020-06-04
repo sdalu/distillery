@@ -7,6 +7,8 @@ require 'fileutils'
 
 require_relative 'error'
 require_relative 'rom/path'
+require_relative 'rom/path/file'
+require_relative 'rom/path/virtual'
 
 module Distillery
 
