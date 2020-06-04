@@ -122,6 +122,7 @@ class CLI
         opts.separator 'If another archive is in the way the '		\
                        'operation won\'t be carried out.'
         opts.separator ''
+
         opts.separator 'Options:'
         opts.on '-F', '--format=FORMAT', types,
                 "Archive format (#{ROMArchive::PREFERED})",

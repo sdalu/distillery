@@ -20,7 +20,8 @@ class CLI
         opts.banner = "Usage: #{PROGNAME} overlap [options] ROMDIR..."
 
         opts.separator ''
-        opts.separator 'Check ROMs status, and display missing or extra files.'
+        opts.separator 'Check ROMs status according to index file.'
+        opts.separator ' and display missing or extra files.'
         opts.separator ''
         opts.separator 'Options:'
         opts.on '-r', '--revert', "Display present files instead"

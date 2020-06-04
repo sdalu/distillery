@@ -113,7 +113,7 @@ class CLI
                        '           sha1: "<hexstring>",'
         opts.separator '            md5: "<hexstring>",'                \
                        '          crc32: "<hexstring>",'
-        opts.separator '           size: <size>,       '                \
+        opts.separator '           size: <integer>,    '                \
                        '        ?offset: <integer>,'
         opts.separator '      timestamp: "<timestamp>" }'
         opts.separator '    ... ]'
