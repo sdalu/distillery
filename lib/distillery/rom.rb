@@ -126,12 +126,12 @@ class ROM
         end
 
         # Return info
-        { :offset => offset,
-          :size   => size,
-          :sha256 => sha256.digest,
+        { :sha256 => sha256.digest,
           :sha1   => sha1.digest,
           :md5    => md5.digest,
           :crc32  => crc32,
+          :size   => size,
+          :offset => offset,
         }.compact
     end
 
@@ -467,6 +467,15 @@ class ROM
     end
 
 
+    # Get ROM sha256 as hexadecimal string (if defined)
+    #
+    # @return [String,nil]      hexadecimal checksum value
+    #
+    def sha256
+        cksum(:sha256, :hex)
+    end
+
+
     # Get ROM sha1 as hexadecimal string (if defined)
     #
     # @return [String,nil]      hexadecimal checksum value
@@ -491,6 +500,17 @@ class ROM
     #
     def crc32
         cksum(:crc32, :hex)
+    end
+
+
+    # Get ROM info.
+    #
+    # @param cksum [:bin, :hex]         How checksum should be generated
+    #
+    # @return [Hash{Symbol=>Object]	ROM information
+    #
+    def info(cksum: :bin)
+        cksums(cksum).merge(:size => size, :offset => offset).compact
     end
 
 
