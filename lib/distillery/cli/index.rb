@@ -7,13 +7,11 @@ class CLI
     #
     # @param romdirs    [Array<String>]         ROMs directories
     # @param type       [Symbol,nil]            type of checksum to use
-    # @param separator  [String]		archive entry separator
     #
     # @return [self]
     #
-    def index(romdirs, type: nil, separator: nil, pathstrip: nil)
-        enum = enum_for(:_index, romdirs,
-                        separator: separator, pathstrip: pathstrip)
+    def index(romdirs, type: nil, pathstrip: nil)
+        enum = enum_for(:_index, romdirs, pathstrip: pathstrip)
 
         case @output_mode
         # Text/Fancy output
@@ -40,7 +38,7 @@ class CLI
 
 
     # @!visibility private
-    def _index(romdirs, separator: nil, pathstrip: nil)
+    def _index(romdirs, pathstrip: nil)
         make_storage(romdirs).roms.index.each do |path, **data|
             if pathstrip&.positive?
                 # Explode path according to file separator
@@ -48,7 +46,7 @@ class CLI
 
                 # In case of archive separator being the same as
                 # file separator we need to reconstruct the 'basename'
-                if separator == File::SEPARATOR
+                if ROM::Path::Archive.separator == File::SEPARATOR
                     # Lookup for an archive name
                     if i_archive = epath.find_index { |name|
                            ROMArchive::EXTENSIONS.any? { |ext|
@@ -103,8 +101,6 @@ class CLI
         opts.on '-c', '--cksum=CHECKSUM', ROM::CHECKSUMS,
                 "Checksum used for indexing (#{ROM::FS_CHECKSUM})",
                 " Value: #{ROM::CHECKSUMS.join(', ')}"
-        opts.on '-S', '--separator=CHAR', String,
-                "Separator for archive entry (#{ROM::Path::Archive.separator})"
         opts.separator ''
 
         # Structured output
@@ -129,7 +125,7 @@ class CLI
             exit
         end
 
-        [ argv, type: opts[:cksum], separator: opts[:separator],
+        [ argv, type: opts[:cksum], 
           pathstrip: opts[:'path-strip'] ]
     end
 

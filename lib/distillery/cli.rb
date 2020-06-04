@@ -56,9 +56,13 @@ class CLI
     # Global option parser
     #
     GlobalParser = OptionParser.new do |opts|
+        # Usage
         opts.banner = "Usage: #{opts.program_name} [options] CMD [opts] [args]"
 
+        # Description
         opts.separator ''
+
+        # Options
         opts.separator 'Options:'
         opts.on '-h', '--help',         "Show this message" do
             puts opts
@@ -73,13 +77,13 @@ class CLI
             puts ''
             exit
         end
-
         opts.on '-V', '--version',      "Show version" do
             puts opts.ver
             exit
         end        
-
         opts.separator ''
+
+        # Global options
         opts.separator 'Global options:'
         opts.on '-o', '--output=FILE',                   "Output file"
         opts.on '-m', '--output-mode=MODE', OUTPUT_MODE,
@@ -87,6 +91,8 @@ class CLI
                 " Value: #{OUTPUT_MODE.join(', ')}"
         opts.on '-D', '--dat=FILE',                      "DAT file"
         opts.on '-I', '--index=FILE',                    "Index file"
+        opts.on '-S', '--separator=CHAR', String,
+                "Separator for archive entry (#{ROM::Path::Archive.separator})"
         opts.on '-d', '--destdir=DIR',                   "Destination directory"
         opts.on '-f', '--force',                         "Force operation"
         opts.on '-p', '--[no-]progress',                 "Show progress"
@@ -144,7 +150,10 @@ class CLI
         if opts.include?(:force)
             @force = opts[:force]
         end
-
+        if opts.include?(:separator)
+            ROM::Path::Archive.separator = opts[:separator]
+        end
+        
         # Sanitize
         if (@ouput_mode == :fancy) && !@io.tty?
             @output_mode = :text
@@ -250,3 +259,4 @@ require_relative 'cli/repack'
 require_relative 'cli/overlap'
 require_relative 'cli/header'
 require_relative 'cli/clean'
+require_relative 'cli/v'
