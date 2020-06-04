@@ -27,10 +27,10 @@ class ROMArchive
     include Enumerable
 
     # Prefered
-    PREFERED   = '7z'
+    PREFERED   = '7z'.freeze
 
     # Allowed extension names
-    EXTENSIONS = Set[ '7z', 'zip' ]
+    EXTENSIONS = Set[ '7z', 'zip' ].freeze
 
 
     # Set buffer size used when processing archive content
