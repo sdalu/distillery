@@ -18,6 +18,7 @@ class Archive < Path
     # @param sep        [String]        separator
     #
     def self.separator=(sep)
+        raise ArgumentError unless (1..2).include?(sep.size)
         @@separator = sep.dup.freeze
     end
 
