@@ -445,13 +445,6 @@ class ROM
     end
 
 
-    # Is size information missing?
-    # @return [Boolean]
-    def missing_size?
-        @size.nil?
-    end
-
-
     # Get ROM offset in bytes.
     # Usually you want to use #headered? instead
     #
