@@ -275,10 +275,15 @@ class ROM
             cksums = Hash[CHECKSUMS_DEF.map { |k, (_, z)| [ k, z ] }]
         end
 
+        # Ensure offset for existing ROM size
+        if !size.nil? && offset.nil?
+            offset = 0 
+        end
+        
         # Initialize
-        @offset = offset
         @path   = path
         @size   = size
+        @offset = offset
         @cksum  = Hash[CHECKSUMS_DEF.map { |k, (s, _)|
             [ k, case val = cksums[k]
                  # No checksum
