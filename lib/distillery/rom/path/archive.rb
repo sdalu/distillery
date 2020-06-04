@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: EUPL-1.2
 
+require_relative '../path'
+
 module Distillery
 class ROM
 class Path
