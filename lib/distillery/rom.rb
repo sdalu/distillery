@@ -466,6 +466,17 @@ class ROM
     end
 
 
+    # Check if ROM hold content.
+    # @note Header is not considered as content.
+    #
+    # @return [Boolean]		ROM has content?
+    # @return [nil]		ROM has not enough information
+    #
+    def empty?
+        @size&.zero?
+    end
+
+
     # Get ROM sha256 as hexadecimal string (if defined)
     #
     # @return [String,nil]      hexadecimal checksum value
