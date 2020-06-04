@@ -441,6 +441,24 @@ class Vault
         self
     end
 
+
+    # Generate ROM index.
+    #
+    # @return [Hash{String=>Hash{Symbol=>Object}}]
+    #
+    def index
+        each.to_h { |rom|
+            # Establish file name
+            file  = rom.path.to_s
+            # Get metadata
+            mtime = File.mtime(rom.path.storage).strftime('%F %T.%N %Z')
+            meta  = rom.info(cksum: :hex).merge(:timestamp => mtime)
+            # Indexed data
+            [ file,  meta ]
+        }
+    end
+
+
     protected
 
     def roms

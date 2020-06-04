@@ -41,7 +41,7 @@ class CLI
 
     # @!visibility private
     def _index(romdirs, separator: nil, pathstrip: nil)
-        make_storage(romdirs).index(separator).each do |path, **data|
+        make_storage(romdirs).roms.index.each do |path, **data|
             if pathstrip&.positive?
                 # Explode path according to file separator
                 epath = path.split(File::SEPARATOR)

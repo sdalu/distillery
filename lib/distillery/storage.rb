@@ -30,24 +30,6 @@ class Storage
     end
 
 
-    def index(separator = nil)
-        each.map { |rom|
-            # Establish file name
-            file   = case path = rom.path
-                     when ROM::Path::Archive then path.to_s(separator)
-                     else                         path.to_s
-                     end
-
-            # Get metadata
-            mtime  = File.mtime(rom.path.storage).strftime('%F %T.%N %Z')
-            meta   = rom.info(cksum: :hex).merge(:timestamp => mtime)
-
-            # Data
-            [ file,  meta ]
-        }
-    end
-
-
     def build_roms_directory(dest, pristine: false, force: false, delete: false)
         block = if delete
                     proc { |rom, copied:, **|
