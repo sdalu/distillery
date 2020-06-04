@@ -503,13 +503,16 @@ class ROM
 
 
     # Get ROM info.
+    # @note If offset start at 0, it is removed from returned data.
     #
     # @param cksum [:bin, :hex]         How checksum should be generated
     #
     # @return [Hash{Symbol=>Object]	ROM information
     #
     def info(cksum: :bin)
-        cksums(cksum).merge(:size => size, :offset => offset).compact
+        cksums(cksum).merge(:size   => @size,
+                            :offset => @offset&.zero? ? nil : @offset
+                           ).compact
     end
 
 
