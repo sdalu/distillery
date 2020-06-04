@@ -25,7 +25,9 @@ class CLI
 
         # JSON/YAML output
         when :json, :yaml
-            @io.puts to_structured_output(Hash[enum.to_a])
+            data = enum.map { |file, meta|
+                [ file, meta.transform_keys(&:to_s) ] }
+            @io.puts to_structured_output(Hash[data])
 
         # That's unexpected
         else
