@@ -112,8 +112,8 @@ class CLI
         opts.separator '            md5: "<hexstring>",'                \
                        '          crc32: "<hexstring>",'
         opts.separator '           size: <size>,       '                \
-                       '      timestamp: "<timestamp>",'
-        opts.separator '      ?headered: <true> }'
+                       '        ?offset: <integer>,'
+        opts.separator '      timestamp: "<timestamp>" }'
         opts.separator '    ... ]'
         opts.separator ''
     end
