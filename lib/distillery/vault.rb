@@ -356,7 +356,7 @@ class Vault
     end
 
 
-    # Save ROM to filesystem using hash as name.
+    # Copy ROM to filesystem using hash as name.
     #
     # @param dir      [String]          directory used for saving
     # @param part   [:all,:header,:rom] which part of the ROM file to save
@@ -370,7 +370,7 @@ class Vault
     #
     # @return [self]
     #
-    def save(dir, part: :all, subdir: false, pristine: false, force: false)
+    def copy(dir, part: :all, subdir: false, pristine: false, force: false)
         # Directory
         FileUtils.remove_dir(dir) if     pristine        # Create clean env
         Dir.mkdir(dir)            unless Dir.exist?(dir) # Ensure directory

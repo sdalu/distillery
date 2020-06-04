@@ -63,7 +63,7 @@ class CLI
     # @!visibility private
     def _header(hdrdir, romdirs)
         make_storage(romdirs).roms
-          .save(hdrdir, part: :header, force: @force) do |rom, as:, copied:, **|
+          .copy(hdrdir, part: :header, force: @force) do |rom, as:, copied:, **|
             yield(rom, as: as, copied: copied)
         end
     end

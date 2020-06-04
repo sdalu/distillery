@@ -5,17 +5,55 @@ module Distillery
 class CLI
 
     def clean(datfile, romdirs, savedir: nil)
-        dat        = make_dat(datfile)
-        storage    = make_storage(romdirs)
-        extra      = storage.roms - dat.roms
+        enum = enum_for(:_clean, datfile, romdirs, savedir: savedir)
 
-        extra.save(savedir) if savedir
-        extra.each(&:delete!)
+        case @output_mode
+        # Text/Fancy output
+        when :text, :fancy
+            enum.each do |rom, moved:, error: nil |
+                moved ||= '<deleted>'
+                error   = " (#{error})" if error
+                @io.puts "- #{rom} -> #{moved}#{error}"
+            end
+
+        # JSON/YAML output
+        when :json, :yaml
+            # @io.puts to_structured_output(Hash[enum.to_a])
+
+        # That's unexpected
+        else
+            raise Assert
+        end
 
         # Allows chaining
         self
     end
 
+    def _clean(datfile, romdirs, savedir: nil)
+        dat        = make_dat(datfile)
+        storage    = make_storage(romdirs)
+        extra      = storage.roms - dat.roms
+
+        if savedir
+            extra.copy(savedir) do |rom, copied:, as:|
+                error = if copied
+                            rom.delete!
+                            nil
+                        elsif File.exists?(as)
+                            'file exist'
+                        else
+                            'failed'
+                        end
+                yield(rom, moved: as, error: error)
+            end
+        else
+            extra.each do |rom|
+                rom.delete!
+                yield(rom, moved: nil, error: nil)
+            end
+        end
+        
+    end
 
     # -----------------------------------------------------------------
 
