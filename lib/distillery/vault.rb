@@ -23,7 +23,12 @@ class Vault
     ARCHIVES     = ROMArchive::EXTENSIONS
 
     # List of files to be ignored
-    IGNORE_FILES = Set[ '.dat', '.missing', '.baddump', '.extra' ]
+    #   .dat     : dat file
+    #   .index   : index file
+    #   .missing : list of missing ROMs
+    #   .baddump : list of baddump ROMs
+    #   .extra   : list of extra ROMs
+    IGNORE_FILES = Set[ '.dat', '.index', '.missing', '.baddump', '.extra' ]
 
     # List of directories to be ignored
     IGNORE_DIRS  = Set[ '.roms', '.games', '.trash' ]
