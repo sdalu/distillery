@@ -164,7 +164,7 @@ class CLI
             opts[:dat] = File.join(opts[:romdirs].first, '.dat')
         end
         if opts[:dat].nil?
-            warn "missing datfile"
+            warn "missing DAT file"
             exit
         end
         if opts[:romdirs].empty?
