@@ -33,6 +33,43 @@ class ROMArchive
     EXTENSIONS = Set[ '7z', 'zip' ].freeze
 
 
+    # @!visibility private
+    EXTENSIONS_REGEXP = /(?: #{ EXTENSIONS.map { |ext| Regexp.escape(ext) }
+                                          .join('|') } 
+                         )/x.freeze
+    FILE_REGEXP       = /(?<file>.+\.#{EXTENSIONS_REGEXP})/x.freeze
+    ENTRY_REGEXP      = /(?<entry>.+)/.freeze
+
+
+    # Parse an archive path, and return it's file and entry
+    #
+    # @param str        [String]	string to parse
+    # @param separator  [String]        separator to use
+    #                                   default to ROM::Path::Archive.separator
+    #
+    # @return [Array<String>] file and entry
+    #
+    def self.parse_path(str, separator = nil)
+        separator ||= ROM::Path::Archive.separator
+        sepsize     = separator.size
+        regexp      = case sepsize
+                      when 2
+                          sb = Regexp.escape(separator[0])
+                          se = Regexp.escape(separator[1])
+                          /\A#{FILE_REGEXP}#{sb}#{ENTRY_REGEXP}#{se}\Z/
+                      when 1
+                          s  = Regexp.escape(separator)
+                          /\A#{FILE_REGEXP}#{s}#{ENTRY_REGEXP}\Z/
+                      else
+                          raise ArgumentError
+                      end
+        
+        if m = str.match(regexp)
+            [ m[:file], m[:entry] ]
+        end
+    end
+
+
     # Set buffer size used when processing archive content
     #
     # @param size [Integer]             size in kbytes
