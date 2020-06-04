@@ -32,16 +32,18 @@ class Storage
 
     def index(separator = nil)
         each.map { |rom|
+            # Establish file name
             file   = case path = rom.path
                      when ROM::Path::Archive then path.to_s(separator)
                      else                         path.to_s
                      end
-            cksums = rom.cksums(:hex)
+
+            # Get metadata
             mtime  = File.mtime(rom.path.storage).strftime('%F %T.%N %Z')
-            data   = cksums.merge(:size      => rom.size,
-                                  :offset    => rom.offset,
-                                  :timestamp => mtime).compact
-            [ file,  data ]
+            meta   = rom.info(cksum: :hex).merge(:timestamp => mtime)
+
+            # Data
+            [ file,  meta ]
         }
     end
 
