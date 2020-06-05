@@ -4,6 +4,10 @@ require 'set'
 require 'pathname'
 require 'fileutils'
 require 'find'
+require 'psych'
+require 'yaml'
+require 'json'
+require 'time'
 
 require_relative 'rom'
 require_relative 'rom-archive'
@@ -12,6 +16,10 @@ module Distillery
 
 class Vault
     include Enumerable
+
+    # Exception for vault loading
+    class LoadError < Error
+    end
 
     # @!visibility private
     GLOB_PATTERN_REGEX = /(?<!\\)[?*}{\[\]]/.freeze
@@ -123,8 +131,66 @@ class Vault
     end
 
 
+    # Load a vault from an index file.
+    #
+    # @param file        [String]       file to load
+    # @param out_of_sync [nil,#add]     holder for out of sync files
+    #
+    # @raise [LoadError] content is not loadable
+    #
+    # @return [Vault]
+    #
+    def self.load(file, out_of_sync: nil)
+        archives = {}			  # Consolidating archives entries
+        vault    = Vault.new		  # Vault object
+        dir      = File.dirname(file)	  # Base directory
+        data     = Psych.load_file(file)  # Loaded data
+
+        # Basic sanity check on content
+        raise LoadError unless data.instance_of?(Hash)
+
+        # Process data
+        data.each do |file, meta|
+            # Extract ROM info and timestamp
+            info      = meta.transform_keys(&:to_sym)
+            timestamp = Time.parse(info.delete(:timestamp))
+
+            # Build ROM description
+            a_file, a_entry = ROMArchive.parse_path(file)
+            rom = if a_file
+                      a_file = File.join(dir, a_file)
+                      if a_file.start_with?(".#{File::SEPARATOR}")
+                          a_file = a_file[(File::SEPARATOR.size+1)..-1]
+                      end
+
+                      archive = archives[a_file] ||= ROMArchive.new(a_file)
+                      path    = ROM::Path::Archive.new(archive, a_entry)
+                      archive[a_entry] = ROM.new(path, **info)
+                  else
+                      ROM.new(ROM::Path::File.new(file, dir), **info)
+                  end
+
+            # Add rom to vault
+            vault.add_rom(rom)
+
+            # Check timestamp
+            if out_of_sync
+                unless File.exists?(rom.path.storage) &&
+                       (File.mtime(rom.path.storage) == timestamp)
+                    out_of_sync.add(rom.path.storage)
+                end
+            end
+        end
+
+        # Populated vault
+        vault
+    rescue Psych::SyntaxError
+        raise LoadError, "YAML/JSON file required"
+    end
+
+    
     def initialize(roms = [])
-        @cksum    = Hash[CHECKSUMS.map { |k| [ k, {} ] }]
+        @cksum    = CHECKSUMS.to_h { |k| [ k, {} ] }
         @roms     = []
 
         Array(roms).each { |rom| add_rom(rom) }
@@ -459,6 +525,71 @@ class Vault
         }
     end
 
+    # Save vault as an index file.
+    #
+    # @param dst       [String, IO]     Content destination
+    # @param type      [:yaml, :json]	Type of data to generated
+    # @param pathstrip [Integer,nil]    Strip path from the first directories
+    # @param skipped   [Proc]           Notify of skipped entry
+    #
+    # @return [self]
+    #
+    def save(dst, type: :yaml, pathstrip: nil, skipped: nil)
+        # Build data
+        data = index.map { |path, **meta|
+            # Perform path stripping if required
+            if pathstrip&.positive?
+                # Explode path according to file separator
+                epath = path.split(File::SEPARATOR)
+
+                # In case of archive separator being the same as
+                # file separator we need to reconstruct the 'basename'
+                if ROM::Path::Archive.separator == File::SEPARATOR
+                    # Lookup for an archive name
+                    if i_archive = epath.find_index { |name|
+                           ROMArchive::EXTENSIONS.any? { |ext|
+                               name.end_with?(".#{ext}")
+                           }
+                       }
+                        # Reconstruct basename
+                        epath[i_archive..-1] =
+                            epath[i_archive..-1].join(File::SEPARATOR)
+                    end
+                end
+
+                # Strip path
+                epath = epath[pathstrip..-1]
+
+                # Check that path is not completely erased
+                if epath.empty?
+                    skipped&.call(path)   # Notify
+                    next                  # Skip saving
+                end
+
+                # Create new path
+                path = epath.join(File::SEPARATOR)
+            end
+
+            [ path, meta.transform_keys(&:to_s) ]
+        }.compact.to_h
+
+        # Convert to selected type
+        data = case type
+               when :json then data.to_json
+               when :yaml then data.to_yaml
+               else raise ArgumentError, 'unsupported mode'
+               end
+
+        # Save to the selected destination
+        case dst
+        when String then File.write(dst, data)
+        when IO     then dst.puts(data)
+        else raise ArgumentError, 'unsupported destination'
+        end
+
+        # Chainable
+        self
+    end
 
     protected
 

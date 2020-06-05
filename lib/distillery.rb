@@ -7,5 +7,4 @@ end
 
 require_relative 'distillery/version'
 require_relative 'distillery/datfile'
-require_relative 'distillery/indexfile'
 require_relative 'distillery/storage'

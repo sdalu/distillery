@@ -6,26 +6,19 @@ class CLI
     # Print index (hash and path of each ROM)
     #
     # @param romdirs    [Array<String>]         ROMs directories
-    # @param type       [Symbol,nil]            type of checksum to use
     #
     # @return [self]
     #
-    def index(romdirs, type: nil, pathstrip: nil)
-        enum = enum_for(:_index, romdirs, pathstrip: pathstrip)
+    def index(romdirs, pathstrip: nil)
 
         case @output_mode
         # Text/Fancy output
         when :text, :fancy
-            type ||= ROM::FS_CHECKSUM
-            enum.each do |path, **data|
-                @io.puts "#{data[type]} #{path}"
-            end
+            raise "only yaml or json mode are supported"
 
         # JSON/YAML output
         when :json, :yaml
-            data = enum.map { |file, meta|
-                [ file, meta.transform_keys(&:to_s) ] }
-            @io.puts to_structured_output(Hash[data])
+            make_storage(romdirs).roms.save($stdout)
 
         # That's unexpected
         else
@@ -34,46 +27,6 @@ class CLI
 
         # Allows chaining
         self
-    end
-
-
-    # @!visibility private
-    def _index(romdirs, pathstrip: nil)
-        make_storage(romdirs).roms.index.each do |path, **data|
-            if pathstrip&.positive?
-                # Explode path according to file separator
-                epath = path.split(File::SEPARATOR)
-
-                # In case of archive separator being the same as
-                # file separator we need to reconstruct the 'basename'
-                if ROM::Path::Archive.separator == File::SEPARATOR
-                    # Lookup for an archive name
-                    if i_archive = epath.find_index { |name|
-                           ROMArchive::EXTENSIONS.any? { |ext|
-                               name.end_with?(".#{ext}")
-                           }
-                       }
-                        # Reconstruct basename
-                        epath[i_archive..-1] =
-                            epath[i_archive..-1].join(File::SEPARATOR)
-                    end
-                end
-
-                # Strip path
-                epath = epath[pathstrip..-1]
-
-                # Sanity check
-                if epath.empty?
-                    warn "SKIPPED: #{path}"
-                    next
-                end
-
-                # Create new path
-                path = epath.join(File::SEPARATOR)
-            end
-
-            yield(path, **data)
-        end
     end
 
 
@@ -98,9 +51,6 @@ class CLI
         opts.separator 'Options:'
         opts.on '-p', '--path-strip=INTEGER', Integer,
                 "Pathname strip count"
-        opts.on '-c', '--cksum=CHECKSUM', ROM::CHECKSUMS,
-                "Checksum used for indexing (#{ROM::FS_CHECKSUM})",
-                " Value: #{ROM::CHECKSUMS.join(', ')}"
         opts.separator ''
 
         # Structured output
@@ -125,8 +75,7 @@ class CLI
             exit
         end
 
-        [ argv, type: opts[:cksum], 
-          pathstrip: opts[:'path-strip'] ]
+        [ argv, pathstrip: opts[:'path-strip'] ]
     end
 
 end
