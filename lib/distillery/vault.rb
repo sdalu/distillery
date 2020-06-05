@@ -24,6 +24,12 @@ class Vault
     # @!visibility private
     GLOB_PATTERN_REGEX = /(?<!\\)[?*}{\[\]]/.freeze
 
+    # Convenient proc to be used with #dump
+    PRINTER      = proc { |entry, subentries|
+        puts "- #{entry}"
+        Array(subentries).each { |entry| puts "  . #{entry}" }
+    }
+
     # List of ROM checksums
     CHECKSUMS    = ROM::CHECKSUMS
 
@@ -524,6 +530,7 @@ class Vault
             [ file,  meta ]
         }
     end
+
 
     # Save vault as an index file.
     #
