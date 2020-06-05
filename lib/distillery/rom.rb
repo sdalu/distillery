@@ -591,7 +591,7 @@ class ROM
     def copy(to, part: :all, force: false, link: :hard)
         # Sanity check
         unless [ :all, :rom, :header ].include?(part)
-            raise ArgumenetError, "unsupported part (#{part})"
+            raise ArgumentError, "unsupported part (#{part})"
         end
 
         # Copy
