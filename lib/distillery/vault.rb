@@ -532,7 +532,7 @@ class Vault
     # @param pathstrip [Integer,nil]    Strip path from the first directories
     # @param skipped   [Proc]           Notify of skipped entry
     #
-    # @return [self]
+    # @return [Boolean]
     #
     def save(dst, type: :yaml, pathstrip: nil, skipped: nil)
         # Build data
@@ -561,7 +561,7 @@ class Vault
                 epath = epath[pathstrip..-1]
 
                 # Check that path is not completely erased
-                if epath.empty?
+                if epath.nil? || epath.empty?
                     skipped&.call(path)   # Notify
                     next                  # Skip saving
                 end
@@ -573,6 +573,9 @@ class Vault
             [ path, meta.transform_keys(&:to_s) ]
         }.compact.to_h
 
+        # If empty don't emit output
+        return false if data.empty?
+        
         # Convert to selected type
         data = case type
                when :json then data.to_json
@@ -587,8 +590,8 @@ class Vault
         else raise ArgumentError, 'unsupported destination'
         end
 
-        # Chainable
-        self
+        # Ok
+        true
     end
 
     protected
