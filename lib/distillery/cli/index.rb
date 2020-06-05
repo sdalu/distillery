@@ -5,7 +5,8 @@ class CLI
 
     # Print index (hash and path of each ROM)
     #
-    # @param romdirs    [Array<String>]         ROMs directories
+    # @param romdirs   [Array<String>]  ROMs directories
+    # @param pathstrip [Integer,nil]    Strip path from the first directories
     #
     # @return [self]
     #
@@ -18,7 +19,10 @@ class CLI
 
         # JSON/YAML output
         when :json, :yaml
-            make_storage(romdirs).roms.save($stdout)
+            make_storage(romdirs).roms.save(@io,
+                           type: @output_mode,
+                      pathstrip: pathstrip,
+                        skipped: ->(path) { warn "SKIPPED: #{path}" } )
 
         # That's unexpected
         else
@@ -41,10 +45,6 @@ class CLI
         # Description
         opts.separator ''
         opts.separator 'Generate index (filename and metadata).'
-        opts.separator 'In structured mode all metadata is outputted, but ' \
-                       'in text mode'
-        opts.separator 'only the selected checksum is present.'
-        opts.separator 'Note: checksums are not computed on header part.'
         opts.separator ''
 
         # Options
