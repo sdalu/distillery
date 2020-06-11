@@ -129,7 +129,7 @@ class CLI
             exit
         end
         if !@@subcommands.include?(subcommand)
-            warn "subcommand \'#{subcommand}\' is not recognised"
+            warn "subcommand \'#{subcommand}\' is not recognized"
             exit
         end
 
