@@ -2,12 +2,6 @@
 
 require 'set'
 
-begin
-    require 'mimemagic'
-rescue LoadError
-    # That's ok, it's an optional commponent
-end
-
 require_relative 'archiver'
 require_relative 'archiver/external'
 require_relative 'archiver/zip'
@@ -15,6 +9,8 @@ require_relative 'rom'
 require_relative 'rom/path'
 require_relative 'rom/path/archive'
 
+require 'logger'
+Distillery::Archiver.logger = Logger.new($stderr)
 Distillery::Archiver.registering
 
 

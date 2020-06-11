@@ -6,6 +6,13 @@ require 'set'
 
 require_relative 'archiver/archive'
 
+begin
+    require 'mimemagic'
+rescue LoadError
+    # That's ok, it's an optional commponent
+end
+
+
 module Distillery
 
 # @abstract
