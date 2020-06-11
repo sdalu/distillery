@@ -22,7 +22,9 @@ rhum repack -F 7z ${rom_directory}
 rhum index ${rom_directory}             # text mode (only 1 checksum)
 rhum -m yaml index ${rom_directory}     # structured mode (recommanded)
 
-
 # Save ROM header to the specified directory
 rhum -d ${header_dir} header ${rom_directory}
+
+# Remove unknown ROM
+rhum -d ${save_dir} -D ${datfile} clean ${rom_directory}
 ~~~
