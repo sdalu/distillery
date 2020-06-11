@@ -8,7 +8,9 @@ require 'fileutils'
 require_relative 'error'
 require_relative 'rom/path'
 require_relative 'rom/path/file'
+require_relative 'rom/path/file-compressed'
 require_relative 'rom/path/virtual'
+
 
 module Distillery
 
@@ -19,6 +21,9 @@ module Distillery
 class ROM
     class HeaderLookupError < Error
     end
+
+    # Allowed extension name for compressed ROM
+    COMPRESSED_EXTENSIONS = Path::FileCompressed::SUPPORTED
         
     # @!visibility private
     HEADERS = [
@@ -77,6 +82,18 @@ class ROM
     # Checksum used when saving to file-system
     FS_CHECKSUM      = :sha1
 
+
+    # Check if file is a compressed file.
+    #
+    # @param file    [String]		file to check for compression
+    #
+    # @return [Boolean]
+    #
+    def self.compressed?(file)
+        ext = File.basename(file).split('.')[-1]
+        COMPRESSED_EXTENSIONS.include?(ext)
+    end
+    
 
     # Get information about ROM file (size, checksum, header, ...)
     #
@@ -253,8 +270,15 @@ class ROM
                          end
         file           = File.join(basedir, entry)
 
-        rominfo = File.open(file) { |io| ROM.info(io, headers: headers) }
-        self.new(ROM::Path::File.new(entry, basedir), **rominfo)
+        # XXX: need to cleanup code
+        if ROM.compressed?(file)
+            rominfo = Zlib::GzipReader.open(file) {|io| ROM.info(io, headers: headers) }
+            entry = entry[0..-4]
+            self.new(ROM::Path::FileCompressed.new(entry, 'gz', basedir), **rominfo)
+        else
+            rominfo = File.open(file) { |io| ROM.info(io, headers: headers) }
+            self.new(ROM::Path::File.new(entry, basedir), **rominfo)
+        end
     end
 
 
@@ -610,6 +634,7 @@ class ROM
                              [ @offset, 0 ]
                          end
 
+        # Perform copy
         @path.copy(to, length, offset, force: force, link: link)
     end
 
