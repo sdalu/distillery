@@ -27,7 +27,7 @@ class CLI
                     spinner = TTY::Spinner.new('[:spinner] :file',
                                                :hide_cursor => true,
                                                :output      => @io)
-                    width = TTY::Screen.width - 8
+                    width = TTY::Screen.width - (8 + type.size)
                     spinner.update(:file => file.ellipsize(width, :middle))
                     spinner.auto_spin
                     case errmsg = block.call
@@ -58,9 +58,9 @@ class CLI
                 raise Assert
             end
         finalizer   =
-            if @output_mode == :json
+            if (@output_mode == :json) || (@output_mode == :yaml)
                 lambda {
-                    @io.puts accumulator.to_json
+                    @io.puts to_structured_output(accumulator)
                 }
             end
 
@@ -128,7 +128,8 @@ class CLI
                 "Archive format (#{ROMArchive::PREFERED})",
                 " Value: #{types.join(', ')}"
         opts.separator ''
-        opts.separator 'JSON output:'
+
+        opts.separator 'Structured output:'
         opts.separator '  [ { file: "<file>", ?error: "<error message>" },'
         opts.separator '    ... ]'
         opts.separator ''
