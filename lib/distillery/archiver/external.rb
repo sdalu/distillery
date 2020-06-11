@@ -121,7 +121,7 @@ class External < Archiver
     def reader(file, entry)
         subst = { '$(infile)' => file, '$(entry)' => entry }
         cmd   = @read[:cmd ]
-        args  = @read[:args].map { |e| e.gsub(/\$\(\w+\)/, subst) }
+        args  = @read[:args]&.map { |e| e.gsub(/\$\(\w+\)/, subst) }
 
         Open3.popen2(cmd, *args) do |stdin, stdout|
             stdin.close_write
@@ -134,7 +134,7 @@ class External < Archiver
     def writer(file, entry)
         subst = { '$(infile)' => file, '$(entry)' => entry }
         cmd   = @write[:cmd ]
-        args  = @write[:args].map { |e| e.gsub(/\$\(\w+\)/, subst) }
+        args  = @write[:args]&.map { |e| e.gsub(/\$\(\w+\)/, subst) }
 
         Open3.popen2(cmd, *args) do |stdin, _stdout|
             yield(OutputStream.new(stdin))
@@ -160,7 +160,7 @@ class External < Archiver
     def entries(file)
         subst     = { '$(infile)' => file }
         cmd       = @list[:cmd      ]
-        args      = @list[:args     ].map { |e| e.gsub(/\$\(\w+\)/, subst) }
+        args      = @list[:args     ]&.map { |e| e.gsub(/\$\(\w+\)/, subst) }
         parser    = @list[:parser   ]
         validator = @list[:validator]
 
