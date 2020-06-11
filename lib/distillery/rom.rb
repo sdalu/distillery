@@ -174,7 +174,7 @@ class ROM
     # @param length [Integer,nil]       data length to be copied
     # @param offset [Integer]           data offset
     # @param force  [Boolean]           remove previous file if necessary
-    # @param link   [:hard, :sym, nil]  use link instead of copy if possible
+    # @param link   [:hard, :sym, false] use link instead of copy if possible
     #
     # @return [Boolean]                 status of the operation
     #
