@@ -175,10 +175,17 @@ class ClrMamePro
     # @return [Object]
     #
     def get_token(expected = nil)
-        @s.skip /\s+/                                   # Skip white space
-        token = @s.scan /\b[^\s]+\b|"[^"]*"|\(|\)/      # Fetch next token
-        unexpected!(char: @s.peek(1)) if token.nil?     # Unexpected char?
-        return token                  if expected.nil?  # No extra checking
+        # Skip white space
+        @s.skip /\s+/
+        # Fetch next token
+        token = @s.scan /\b[^\s]+\b|\(|\)/
+        if token.nil? && (token = @s.scan /"(?:[^"]|\\")*"/)
+            token = token[1..-2].gsub('\\"', '"')
+        end
+        # Unexpected char?
+        unexpected!(char: @s.peek(1)) if token.nil?     
+        # Shortcut due to no extra checking
+        return token                  if expected.nil?
 
         # Verify and convert to the expected token
         if    expected == Integer
@@ -277,7 +284,7 @@ class ClrMamePro
         {}.tap { |o|
             loop {
                 case k = get_token
-                when 'name'         then o[k] = get_token(String)
+                when 'name'         then o[k] = get_token(Pathname)
                 when 'description'  then o[k] = get_token(String)
                 when 'year'         then o[k] = get_token(Integer)
                 when 'rom'          then
@@ -296,7 +303,7 @@ class ClrMamePro
         {}.tap { |o|
             loop {
                 case k = get_token
-                when 'name'   then o[k] = get_token(String)
+                when 'name'   then o[k] = get_token(Pathname)
                 when 'merge'  then o[k] = get_token(String)
                 when 'size'   then o[k] = get_token(Integer)
                 when 'flags'  then o[k] = get_token(String)
@@ -315,7 +322,7 @@ class ClrMamePro
         {}.tap { |o|
             loop {
                 case k = get_token
-                when 'name'   then o[k] = get_token(String)
+                when 'name'   then o[k] = get_token(Pathname)
                 when 'merge'  then o[k] = get_token(String)
                 when 'size'   then o[k] = get_token(Integer)
                 when 'flags'  then o[k] = get_token(String)
