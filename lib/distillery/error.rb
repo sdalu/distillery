@@ -10,4 +10,8 @@ end
 class Error < StandardError
 end
 
+# NotImplementedError
+class NotImplementedError < StandardError
+end
+
 end
