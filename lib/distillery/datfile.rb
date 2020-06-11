@@ -1,12 +1,14 @@
 # SPDX-License-Identifier: EUPL-1.2
 
 require 'set'
-require 'nokogiri'
 
 require_relative 'error'
 require_relative 'game'
 require_relative 'rom'
 require_relative 'vault'
+
+require_relative 'datfile-clrmamepro'
+require_relative 'datfile-logiqx'
 
 module Distillery
 
@@ -35,48 +37,53 @@ class DatFile
         @roms_game[rom.object_id]
     end
 
-
-    # Create DatFile representation from file.
+    
+    # Get DatFile representation from file.
     #
     # @param datfile [String]
     #
-    def initialize(datfile)
-        @games     = Set.new
-        @roms      = Vault::new
-        @roms_game = {}
-
+    # @returns [DatFile]
+    #
+    # @raises [ContentError]
+    #
+    def self.from_file(datfile)
         if !FileTest.file?(datfile)
             raise ArgumentError, "DAT file is missing or not a regular file"
         end
+        
+        data  = File.read(datfile, encoding: 'BINARY')
+        
+        dat ||= Logiqx.get(data)     if defined?(Logiqx)
+        dat ||= ClrMamePro.get(data) if defined?(ClrMamePro)
 
-        # Get datafile as XML document
-        dat = Nokogiri::XML(File.read(datfile))
+        dat || raise(ContentError)
+    end
+    
+    
+    # Create DatFile representation
+    #
+    # @param games        [Array<Game>]		list of games
+    # @param name	  [String]
+    # @param description  [String]
+    # @param url	  [String]
+    # @param date	  [String]
+    # @param version	  [String]
+    # @param author	  [String]
+    #
+    def initialize(games, name: nil, description: nil, url: nil, date: nil, version: nil, author: nil)
+        @games       = Set.new
+        @roms        = Vault::new
+        @roms_game   = {}
 
-        dat.xpath('//header').each do |hdr|
-            @name        = hdr.xpath('name'       )&.first&.content
-            @description = hdr.xpath('description')&.first&.content
-            @url         = hdr.xpath('url'        )&.first&.content
-            @date        = hdr.xpath('date'       )&.first&.content
-            @version     = hdr.xpath('version'    )&.first&.content
-        end
-
-        # Process each game elements
-        dat.xpath('//game').each do |g|
-            releases = g.xpath('release').map { |r|
-                Release::new(r[:name], region: r[:region].upcase)
-            }
-            roms     = g.xpath('rom').map { |r|
-                path = File.join(r[:name].split('\\'))
-                ROM::new(ROM::Path::Virtual.new(path),
-                         :size  => Integer(r[:size]),
-                         :crc32 => r[:crc ],
-                         :md5   => r[:md5 ],
-                         :sha1  => r[:sha1])
-            }
-            game     = Game::new(g['name'], *roms, releases: releases,
-                                                    cloneof: g['cloneof'])
-
-            roms.each do |rom|
+        @name        = name
+        @description = description
+        @url         = url
+        @date        = date
+        @version     = version
+        @author      = author
+        
+        games.each do |game|
+            game.roms.each do |rom|
                 (@roms_game[rom.object_id] ||= []) << game
                 @roms << rom
             end
@@ -175,6 +182,11 @@ class DatFile
     #
     # @return [String,nil]
     attr_reader :version
+
+    # Datfile author
+    #
+    # @return [String,nil]
+    attr_reader :author
 
 end
 

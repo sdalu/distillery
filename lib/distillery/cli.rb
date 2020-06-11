@@ -179,11 +179,9 @@ class CLI
     # @return [DatFile]
     #
     def make_dat(file, verbose: @verbose, progress: @progress)
-        dat = DatFile.new(file)
-        if verbose
-            $stderr.puts "DAT = #{dat.version}"
-        end
-        dat
+        DatFile.from_file(file).tap { |dat|
+            $stderr.puts "DAT = #{dat.version}" if verbose
+        }
     end
 
 
