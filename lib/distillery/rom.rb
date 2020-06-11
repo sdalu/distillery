@@ -183,36 +183,41 @@ class ROM
         # Ensure sub-directories are created
         FileUtils.mkpath(File.dirname(to))
 
-        # If whole file is to be copied try optimisation
+        # If whole file is to be copied try optimization
         if length.nil? && offset.zero?
-            # If we are on the same filesystem, we can use hardlink
-            f_stat = File.stat(from)
-            f_dev  = [ f_stat.dev_major, f_stat.dev_minor ]
-            t_stat = File.stat(File.dirname(to))
-            t_dev  = [ t_stat.dev_major, t_stat.dev_minor ]
-            if f_dev == t_dev
-                # If file already exists we will need to unlink it before
-                # but we will try to create hardlink before to not remove
-                # it unnecessarily if hardlinks are not supported
-                begin
-                    File.link(from, to)
-                    return true
-                rescue Errno::EEXIST
-                    # Don't catch exception unless forced
-                    raise unless force
-                    # File exist and we need to unlink it
-                    # if unlink or link fails, something is wrong
+            case link
+            when  :hard
+                # If we are on the same filesystem, we can use hardlink
+                f_stat = File.stat(from)
+                f_dev  = [ f_stat.dev_major, f_stat.dev_minor ]
+                t_stat = File.stat(File.dirname(to))
+                t_dev  = [ t_stat.dev_major, t_stat.dev_minor ]
+                if f_dev == t_dev
+                    # If file already exists we will need to unlink it before
+                    # but we will try to create hardlink before to not remove
+                    # it unnecessarily if hardlinks are not supported
                     begin
-                        File.unlink(to)
                         File.link(from, to)
                         return true
-                    rescue Errno::ENOENT
-                        # That's ok we tried to unlink a file
-                        # which didn't exists
+                    rescue Errno::EEXIST
+                        # Don't catch exception unless forced
+                        raise unless force
+                        # File exist and we need to unlink it
+                        # if unlink or link fails, something is wrong
+                        begin
+                            File.unlink(to)
+                            File.link(from, to)
+                            return true
+                        rescue Errno::ENOENT
+                            # That's ok we tried to unlink a file
+                            # which didn't exists
+                        end
+                    rescue Errno::EOPNOTSUPP
+                        # If link are not supported fallback to copy
                     end
-                rescue Errno::EOPNOTSUPP
-                    # If link are not supported fallback to copy
                 end
+            when :sym
+                raise NotImplementedError
             end
         end
 
