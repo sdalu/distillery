@@ -541,7 +541,7 @@ class Vault
     #
     # @return [Boolean]
     #
-    def save(dst, type: :yaml, pathstrip: nil, skipped: nil)
+    def save_index(dst, type: :yaml, pathstrip: nil, skipped: nil)
         # Build data
         data = index.map { |path, **meta|
             # Perform path stripping if required

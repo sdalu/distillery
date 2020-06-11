@@ -19,7 +19,7 @@ class CLI
 
         # JSON/YAML output
         when :json, :yaml
-            make_storage(romdirs).roms.save(@io,
+            make_storage(romdirs).roms.save_index(@io,
                            type: @output_mode,
                       pathstrip: pathstrip,
                         skipped: ->(path) { warn "SKIPPED: #{path}" } )
