@@ -49,7 +49,7 @@ class Vault
     IGNORE_DIRS  = Set[ '.roms', '.games', '.trash' ].freeze
 
     # Directory pruning
-    DIR_PRUNING  = Set[ '.dat' ].freeze
+    DIR_PRUNING  = Set[ '.dat', '.index' ].freeze
 
 
     # Potential ROM from directory.
