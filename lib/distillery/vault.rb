@@ -75,7 +75,8 @@ class Vault
                 Find.prune if basename.start_with?('.')
                 Find.prune if !depth.nil? &&
                               subpath.split(File::Separator).size > depth
-                Find.prune if DIR_PRUNING.any? { |f| File.exist?(f) }
+                Find.prune if DIR_PRUNING.any? { |f|
+                                  File.exist?(File.join(path,f)) }
 
             # Process file
             elsif FileTest.file?(path)
