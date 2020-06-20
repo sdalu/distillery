@@ -257,7 +257,7 @@ class ROMArchive
                 op = force ? File::TRUNC : File::EXCL
                 File.open(to, File::CREAT | File::WRONLY | op) do |o|
                     while (skip = [ offset, @@bufsize ].min) > 0
-                        i.read(skip)
+                        break if i.read(skip).nil? # skip and check for EOF
                         offset -= skip
                     end
 
