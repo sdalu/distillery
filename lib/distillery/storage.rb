@@ -36,7 +36,7 @@ class Storage
                         rom.delete! if copied
                     }
                 end
-        @roms.save(dest,
+        @roms.copy(dest,
                    part: :rom, subdir: true, pristine: pristine, force: force,
                    &block)
         self
@@ -114,6 +114,41 @@ class Storage
         end
     end
 
+
+    #
+    # @param rom
+    # @param game [Game, String, nil]
+    # @param :boolean, :symbol, :mixed
+    #
+    def validate(rom, game = nil, romdirs = nil, returns: :boolean)
+        m = @roms.match(rom)
+
+        g_name = case game
+                 when Game   then game.name
+                 when String then game
+                 when nil    then nil
+                 else raise ArgumentError,
+                            "game must be an instance of Game or String"
+                 end
+        
+        sym = if m.nil? || m.empty?
+                  :not_found
+              elsif (m = m.select {|r| r.name == rom.name }).empty?
+                  :name_mismatch
+              elsif !g_name.nil? && !romdirs.nil? &&
+                    (m = m.select { |r|
+                         store = File.basename(r.path.storage)
+                         ROMArchive::EXTENSIONS.any? { |ext|
+                             ext = Regexp.escape(ext)
+                             store.gsub(/\.#{ext}$/i, '') == g_name 
+                         } || (store == g_name) || romdirs.include?(store)
+                     }).empty?
+                  :wrong_place
+              else
+                  :validated
+              end
+
+    end
 
 
     def rename(dat)
