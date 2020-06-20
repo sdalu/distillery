@@ -59,6 +59,9 @@ class Zip < Archiver
                 yield(InputStream.new(is))
             end
         end
+    rescue Zip::Error => e
+        warn "Damaged zip file #{file}"
+        0
     end
 
 
@@ -83,6 +86,9 @@ class Zip < Archiver
                       InputStream.new(zip_entry.get_input_stream))
             end
         end
+    rescue Zip::Error => e
+        warn "Damaged zip file #{file}"
+        []
     end
 
 end
