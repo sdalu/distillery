@@ -95,7 +95,11 @@ class FileCompressed < Path
         # Copy file
         op = force ? ::File::TRUNC : ::File::EXCL
         ::File.open(file, ::File::RDONLY) do |i|
+            # Apply stream decompressor
             i = Zlib::GzipReader.new(i)
+
+            # Seek to offset position
+            # (use our implementation if not available)
             if i.respond_to?(:seek)
                 i.seek(offset)
             else
@@ -105,6 +109,7 @@ class FileCompressed < Path
                 end
             end
 
+            # Perform stream copy
             ::File.open(to, ::File::CREAT | ::File::WRONLY | op) do |o|
                 IO.copy_stream(i, o, length)
             end

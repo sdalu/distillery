@@ -9,8 +9,8 @@ require_relative 'rom'
 require_relative 'rom/path'
 require_relative 'rom/path/archive'
 
-require 'logger'
-Distillery::Archiver.logger = Logger.new($stderr)
+#require 'logger'
+#Distillery::Archiver.logger = Logger.new($stderr)
 Distillery::Archiver.registering
 
 

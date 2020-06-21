@@ -151,8 +151,8 @@ class Archiver
 
     # Register an archiver.
     #
-    # @param [Archiver] archiver                Archiver to register
-    # @param [Boolean] warnings                 Emit warning when overriding
+    # @param archiver	[Archiver]		Archiver to register
+    # @param warnings	[Boolean]		Emit warning when overriding
     #
     def self.register(archiver, warnings: true)
         # Notifier

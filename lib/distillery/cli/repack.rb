@@ -5,14 +5,46 @@ require 'securerandom'
 
 module Distillery
 class CLI
-    using Distillery::StringY
 
+class Repack < Command
+    using Distillery::StringEllipsize
+
+    DESCRIPTION = 'Recompress archives'
+
+    # Parser for repack command
+    Parser = OptionParser.new do |opts|
+        types = ROMArchive::EXTENSIONS.to_a
+        opts.banner = "Usage: #{PROGNAME} #{self} [options] ROMDIR..."
+
+        opts.separator ''
+        opts.separator 'Repack archives to the specified format.'
+        opts.separator 'If another archive is in the way the '		\
+                       'operation won\'t be carried out.'
+        opts.separator ''
+
+        opts.separator 'Options:'
+        opts.on '-F', '--format=FORMAT', types,
+                "Archive format (#{ROMArchive::PREFERED})",
+                " Value: #{types.join(', ')}"
+        opts.separator ''
+
+        opts.separator 'Structured output:'
+        opts.separator '  [ { file: "<file>", ?error: "<error message>" },'
+        opts.separator '    ... ]'
+        opts.separator ''
+    end
+
+    
+    # (see Command#run)
+    def run(argv, **opts)
+        repack(argv, opts[:format])
+    end
+
+    
     # Repack archives.
     #
     # @param romdirs    [Array<String>]         ROMs directories
     # @param type       [String]                Archive type
-    #
-    # @return [self]
     #
     def repack(romdirs, type = nil)
         # Select archive type if not specified
@@ -103,46 +135,10 @@ class CLI
 
         # Apply finalizer if required (for json)
         finalizer&.call()
-
-        # Allows chaining
-        self
     end
 
 
-    # -----------------------------------------------------------------
-
-
-    # Parser for repack command
-    RepackParser = OptionParser.new do |opts|
-        types = ROMArchive::EXTENSIONS.to_a
-        opts.banner = "Usage: #{PROGNAME} repack [options] ROMDIR..."
-
-        opts.separator ''
-        opts.separator 'Repack archives to the specified format.'
-        opts.separator 'If another archive is in the way the '		\
-                       'operation won\'t be carried out.'
-        opts.separator ''
-
-        opts.separator 'Options:'
-        opts.on '-F', '--format=FORMAT', types,
-                "Archive format (#{ROMArchive::PREFERED})",
-                " Value: #{types.join(', ')}"
-        opts.separator ''
-
-        opts.separator 'Structured output:'
-        opts.separator '  [ { file: "<file>", ?error: "<error message>" },'
-        opts.separator '    ... ]'
-        opts.separator ''
-    end
-
-
-    # Register repack command
-    subcommand :repack, 'Recompress archives',
-               RepackParser do |argv, **opts|
-        opts[:romdirs] = argv
-
-        [ opts[:romdirs], opts[:format] ]
-    end
-
+end
+                                  
 end
 end

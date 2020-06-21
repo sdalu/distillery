@@ -1,5 +1,7 @@
+# coding: utf-8
 # SPDX-License-Identifier: EUPL-1.2
 
+require 'set'
 require 'optparse'
 require 'json'
 require 'yaml'
@@ -12,6 +14,7 @@ require 'tty/progressbar'
 require_relative 'storage'
 require_relative 'datfile'
 require_relative 'refinements'
+require_relative 'cli-command'
 
 
 unless defined?(::Version)
@@ -22,35 +25,17 @@ end
 module Distillery
 
 class CLI
-    using Distillery::StringY
+    using Distillery::StringEllipsize
 
-    # List of available output mode
+    # Command line error reporting 
+    class Error < Distillery::Error
+    end
+
+    
+    # List of output mode
+    # @note All the output mode are not necessarily supported
+    #       by all the commands
     OUTPUT_MODE = [ :text, :fancy, :json, :yaml ].freeze
-
-
-    # @!visibility private
-    @@subcommands = {}
-
-
-    # Execute the CLI
-    def self.run(argv = ARGV)
-        self.new.parse(argv)
-    end
-
-
-    # Register a new (sub)command into the CLI
-    #
-    # @param name [Symbol]
-    # @param description [String]
-    # @param optpartser [OptionParser]
-    #
-    # @yieldparam argv [Array<String>]
-    # @yieldparam into: [Object]
-    # @yieldreturn Array<Object>        # Subcommand parameters
-    #
-    def self.subcommand(name, description, optparser = nil, &exec)
-        @@subcommands[name] = [ description, optparser, exec ]
-    end
 
 
     # Global option parser
@@ -63,13 +48,13 @@ class CLI
         opts.separator ''
 
         # Options
-        opts.separator 'Options:'
+        opts.separator 'Informative options:'
         opts.on '-h', '--help',         "Show this message" do
             puts opts
             puts ''
             puts 'Commands:'
-            @@subcommands.each { |name, (desc, *)|
-                puts '    %-12s %s' % [ name, desc ]
+            CLI.commands.each { |name, klass|
+                puts '    %-12s %s' % [ klass.cmdname, klass::DESCRIPTION ]
             }
             puts ''
             puts "See '#{opts.program_name} CMD --help'"                \
@@ -81,39 +66,107 @@ class CLI
             puts opts.ver
             exit
         end        
-        opts.separator ''
 
         # Global options
+        opts.separator ''
         opts.separator 'Global options:'
         opts.on '-o', '--output=FILE',                   "Output file"
         opts.on '-m', '--output-mode=MODE', OUTPUT_MODE,
                 "Output mode (#{OUTPUT_MODE.first})",
                 " Value: #{OUTPUT_MODE.join(', ')}"
-        opts.on '-D', '--dat=FILE',                      "DAT file"
-        opts.on '-I', '--index=FILE',                    "Index file"
         opts.on '-S', '--separator=CHAR', String,
                 "Separator for archive entry (#{ROM::Path::Archive.separator})"
-        opts.on '-d', '--destdir=DIR',                   "Destination directory"
         opts.on '-f', '--force',                         "Force operation"
         opts.on '-p', '--[no-]progress',                 "Show progress"
         opts.on '-v', '--[no-]verbose',                  "Run verbosely"
+
+        #
+        opts.separator ''
+        opts.separator 'Data specific options:'
+        opts.on '-D', '--dat=FILE',                      "DAT file"
+        opts.on '-I', '--index=FILE',                    "Index file"
+        opts.on '-d', '--destdir=DIR',                   "Destination directory"
     end
 
 
     # Program name
     PROGNAME = GlobalParser.program_name
 
-    def initialize
-        @verbose     = true
-        @progress    = true
-        @output_mode = OUTPUT_MODE.first
-        @io          = $stdout
-        @force       = false
+
+    # Test if a class is a CLI::Command implementation
+    #
+    # @param klass [Class]	class to test for command implementation
+    #
+    # @return [Boolean]
+    #
+    def self.command_class?(klass)
+        klass.instance_of?(Class) && (klass < Command)
     end
 
 
-    # Parse command line arguments
+    # List of supported commands.
     #
+    # @return [Hash{String => Class}]
+    #
+    def self.commands
+        self.constants.lazy 
+            .map    {|c| self.const_get(c)     }
+            .select {|k| CLI.command_class?(k) }
+            .to_h   {|k| [ k.cmdname, k ]      }
+    end
+
+
+    # Find the command class corresponding to the name.
+    #
+    # @param name [String]	command name
+    #
+    # @return [Class]		found command class (inherited from Command)
+    # @return [nil]		if not found
+    #
+    def self.find_command_class(name)
+        self.commands.find {|n,k| n == name }&.last
+    end
+
+
+
+    
+    # Run the command line
+    #
+    def self.run(argv = ARGV)
+        self.new.parse(argv).run
+    rescue OptionParser::InvalidArgument, CLI::Error => e
+        warn "#{PROGNAME}: #{e}"
+        exit 1
+    end
+
+
+
+
+    def initialize
+        @output_mode = OUTPUT_MODE.first
+        @io          = $stdout
+        @force       = false
+        @verbose     = true
+        @progress    = true
+
+        @argv        = []
+        @opts        = {}
+        @cmdk        = nil
+    end
+
+    attr_reader :output_mode
+    attr_reader :io
+    attr_reader :force
+    attr_reader :verbose
+    attr_reader :progress
+
+    
+    # Run command line
+    #
+    # @param argv [Array<String>]	command line arguments
+    #
+    # @raises OptionParser::InvalidArgument
+    # @raises CLI::Error
     #
     def parse(argv)
         # Parsed option holder
@@ -122,21 +175,20 @@ class CLI
         # Parse global options
         GlobalParser.order!(argv, into: opts)
 
-        # Check for subcommand
-        subcommand = argv.shift&.to_sym
-        if subcommand.nil?
-            warn "subcommand missing"
-            exit
-        end
-        if !@@subcommands.include?(subcommand)
-            warn "subcommand \'#{subcommand}\' is not recognized"
-            exit
-        end
+        # Check for command processor class
+        cmdname = argv.shift
+        raise Error, "command missing" if cmdname.nil?
+        cmdk    = CLI.find_command_class(cmdname)
+        raise Error, "command \'#{cmdname}\' is not recognized" if cmdk.nil?
 
+        # Adjust default values
+        if cmdk.const_defined?(:OUTPUT_MODE)
+            @output_mode = cmdk::OUTPUT_MODE.first
+        end
+        
         # Process our options
         if opts.include?(:output)
-            @io = File.open(opts[:output],
-                            File::CREAT | File::TRUNC | File::WRONLY)
+            @io = File.open(opts[:output], File::CREAT|File::TRUNC|File::WRONLY)
         end
         if opts.include?(:verbose)
             @verbose = opts[:verbose]
@@ -154,22 +206,38 @@ class CLI
             ROM::Path::Archive.separator = opts[:separator]
         end
         
-        # Sanitize
-        if (@ouput_mode == :fancy) && !@io.tty?
+        # Downgrade output mode if not a TTY
+        if (@output_mode == :fancy) && !@io.tty?
             @output_mode = :text
         end
+        if cmdk.const_defined?(:OUTPUT_MODE) &&
+           !cmdk::OUTPUT_MODE.include?(@output_mode)
+            raise Error, "selected output mode (#{@output_mode}) unavailable" \
+                         " for #{cmdk} command"
+        end
 
-        # Parse command, and build arguments call
-        _, optparser, argbuilder = @@subcommands[subcommand]
-        optparser&.order!(argv, into: opts)
-        args = argbuilder.call(argv, **opts)
+        # Parse command, and run it
+        if cmdk.const_defined?(:Parser)
+            cmdk::Parser.order!(argv, into: opts)
+        end
 
-        # Call subcommand
-        self.method(subcommand).call(*args)
-    rescue OptionParser::InvalidArgument => e
-        warn "#{PROGNAME}: #{e}"
+        # Save parsing results
+        @argv = argv
+        @opts = opts
+        @cmdk = cmdk
+        
+        # Chainable
+        self
     end
 
+    
+    # Run command line
+    #
+    def run
+        return nil if @cmdk.nil?
+        @cmdk::new(self).run(@argv, **@opts)
+    end
+    
 
     # Create DAT from file
     #
@@ -178,7 +246,7 @@ class CLI
     #
     # @return [DatFile]
     #
-    def make_dat(file, verbose: @verbose, progress: @progress)
+    def dat(file, verbose: @verbose, progress: @progress)
         DatFile.from_file(file).tap { |dat|
             $stderr.puts "DAT = #{dat.version}" if verbose
         }
@@ -208,53 +276,76 @@ class CLI
     #
     # @return [Storage]
     #
-    def make_storage(romdirs, depth: nil,
+    def storage(romdirs, depth: nil,
                      verbose: @verbose, progress: @progress)
-        vault = Vault::new
-        block = ->(file, dir:) { vault.add_from_file(file, dir) }
+        Storage::new(vault(romdirs, depth: depth, verbose: verbose,
+                           progress: progress))
+    end
 
-        if progress
-            TTY::Spinner.new('[:spinner] :file', :hide_cursor => true,
-                                                 :clear       => true)
-                        .run('Done!') do |spinner|
-                from_romdirs(romdirs, depth: depth) do |file, dir:|
-                    width = TTY::Screen.width - 8
-                    spinner.update(:file => file.ellipsize(width, :middle))
-                    block.call(file, dir: dir)
+
+    # Create Vault from ROMs directories
+    #
+    # @param source     [Array<String>] array of ROMs directories
+    # @param source     [String]        index file
+    # @param depth      [Integer]       directory depth
+    # @param verbose    [Boolean]       be verbose
+    # @param progress   [Boolean]       show progress
+    #
+    # @return [Vault]
+    #
+    def vault(source, depth: nil, verbose: @verbose, progress: @progress)
+        case source
+        # Process as Vault index
+        when String
+            set   = Set.new
+            vault = Vault.load(source, out_of_sync: set)
+            if !set.empty?
+                warn "index file #{source} is out of sync"
+                if verbose
+                    set.each do |path|
+                        warn "Out of sync: #{path}"
+                    end
                 end
             end
+            
+        # Process as ROM directories
+        when Array
+            vault = Vault::new
+            vault_adder = ->(file, dir:) { vault.add_from_file(file, dir) }
+            if progress
+                TTY::Spinner.new('[:spinner] :file', :hide_cursor => true,
+                                                     :clear       => true)
+                            .run('Done!') do |spinner|
+                    from_romdirs(source, depth: depth) do | file, dir: |
+                        width = TTY::Screen.width - 8
+                        spinner.update(:file => file.ellipsize(width, :middle))
+                        vault_adder.call(file, dir: dir)
+                    end
+                end
+            else
+                from_romdirs(source, depth: depth, &vault_adder)
+            end
+
+        # Oops
         else
-            from_romdirs(romdirs, depth: depth, &block)
+            raise ArgumentError
         end
 
-        Storage::new(vault)
+        # Return vault
+        vault
     end
 
-
-    # Format data according to the selected (structured) output mode
-    #
-    # @param data 	[Object]	data to format
-    #
-    # @return [String] formatted data
-    #
-    def to_structured_output(data)
-        case @output_mode
-        when :yaml then data.to_yaml
-        when :json then data.to_json
-        else raise Assert
-        end
-    end
 end
 end
 
 
-require_relative 'cli/check'
-require_relative 'cli/validate'
+# require_relative 'cli/check'
+# require_relative 'cli/validate'
 require_relative 'cli/index'
-require_relative 'cli/rename'
-require_relative 'cli/rebuild'
+# require_relative 'cli/rename'
+# require_relative 'cli/rebuild'
 require_relative 'cli/repack'
-require_relative 'cli/overlap'
-require_relative 'cli/header'
-require_relative 'cli/clean'
-require_relative 'cli/v'
+# require_relative 'cli/overlap'
+# require_relative 'cli/header'
+# require_relative 'cli/clean'
+# require_relative 'cli/v'

@@ -2,7 +2,7 @@
 
 module Distillery
 
-module StringY
+module StringEllipsize
     refine ::String do
         def ellipsize(width, position = :end, ellipsis: '...')
             # Sanity check
