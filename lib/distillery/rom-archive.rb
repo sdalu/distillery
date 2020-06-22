@@ -114,7 +114,8 @@ class ROMArchive
     # @param file [String]              archive file
     #
     def initialize(file)
-        @file   = file
+        dirname, basename = File.split(file)
+        @file   = dirname == '.' ? basename : file
         @roms   = {}
     end
 
