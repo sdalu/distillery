@@ -4,14 +4,14 @@ module Distillery
 class CLI
 
 class Header < Command
-    DESCRIPTION = 'Extract ROM embedded header'
+    DESCRIPTION = 'Extract embedded header from ROM'
 
     # Parser for header command
     Parser = OptionParser.new do |opts|
         opts.banner = "Usage: #{PROGNAME} #{self} [options] ROMDIR..."
 
         opts.separator ''
-        opts.separator 'Extract embedded header from ROM.'
+        opts.separator DESCRIPTION
         opts.separator 'Headers for the following systems are supported:'
         ROM::HEADERS.map { |name:, **| name }.uniq.sort.each do |name|
             opts.separator "  - #{name}"
