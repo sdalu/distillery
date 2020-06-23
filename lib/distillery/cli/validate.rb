@@ -2,147 +2,24 @@
 
 module Distillery
 class CLI
-    using Distillery::StringY
 
-    # Validate ROMs according to DAT/Index file.
-    #
-    # @param romdirs    [Array<String>]         ROMs directories
-    # @param datfile    [String]                DAT file
-    #
-    # @return [self]
-    #
-    def validate(romdirs, datfile: nil, summarize: false)
-        dat        = make_dat(datfile)
-        storage    = make_storage(romdirs)
-        count      = { :not_found     => 0,
-                       :name_mismatch => 0,
-                       :wrong_place   => 0 }
-        summarizer = lambda { |io|
-            io.puts
-            io.puts "Not found     : #{count[:not_found    ]}"
-            io.puts "Name mismatch : #{count[:name_mismatch]}"
-            io.puts "Wrong place   : #{count[:wrong_place  ]}"
-        }
-        checker    = lambda { |game, rom|
-            m = storage.roms.match(rom)
+class Validate < Command
+    using Distillery::StringEllipsize
 
-            if m.nil? || m.empty?
-                count[:not_found] += 1
-                'not found'
-            elsif (m = m.select {|r| r.name == rom.name }).empty?
-                count[:name_mismatch] += 1
-                'name mismatch'
-            elsif (m = m.select { |r|
-                       store = File.basename(r.path.storage)
-                       ROMArchive::EXTENSIONS.any? { |ext|
-                           ext = Regexp.escape(ext)
-                           store.gsub(/\.#{ext}$/i, '') == game.name
-                       } || (store == game.name) || romdirs.include?(store)
-                   }).empty?
-                count[:wrong_place] += 1
-                'wrong place'
-            end
-        }
-
-        if @output_mode == :fancy
-            dat.each_game { |game|
-                s_width    = TTY::Screen.width
-                r_width    = s_width - 25
-                g_width    = s_width - 10
-
-                game_name = game.name.ellipsize(g_width, :middle)
-                gspinner = TTY::Spinner::Multi.new("[:spinner] #{game_name}",
-                                                   :hide_cursor => true,
-                                                   :output      => @io)
-
-                game.each_rom do |rom|
-                    rom_name = rom.name.ellipsize(r_width, :middle)
-                    rspinner = gspinner.register '[:spinner] :rom'
-                    rspinner.update(:rom => rom_name)
-                    rspinner.auto_spin
-
-                    case v = checker.call(game, rom)
-                    when String then rspinner.error("-> #{v}")
-                    when nil    then rspinner.success
-                    else raise Assert
-                    end
-                end
-            }
-            if summarize
-                summarizer.call(@io)
-            end
-
-
-        elsif (@output_mode == :text) && @verbose
-            dat.each_game do |game|
-                @io.puts "#{game}:"
-                game.each_rom do |rom|
-                    case v = checker.call(game, rom)
-                    when String then @io.puts " - FAILED: #{rom} -> #{v}"
-                    when nil    then @io.puts " - OK    : #{rom}"
-                    else raise Assert
-                    end
-                end
-            end
-            if summarize
-                summarizer.call(@io)
-            end
-
-        elsif @output_mode == :text
-            dat.each_game.flat_map { |game|
-                game.each_rom.map { |rom|
-                    case v = checker.call(game, rom)
-                    when String then [ game.name, rom, v ]
-                    when nil    then nil
-                    else raise Assert
-                    end
-                }.compact
-            }.compact.group_by { |game,| game }.each { |game, list|
-                @io.puts "#{game}"
-                list.each { |_, rom, err|
-                    @io.puts " - FAILED: #{rom} -> #{err}"
-                }
-            }
-
-        elsif (@output_mode == :json) || (@output_mode == :yaml)
-            data = dat.each_game.map { |game|
-                { :game => game.name,
-                  :roms => game.each_rom.map { |rom|
-                      case v = checker.call(game, rom)
-                      when String, nil then [ game.name, rom, v ]
-                      else raise Assert
-                      end
-                      { :rom     => rom.path.entry,
-                        :error   => v
-                      }.compact
-                  }
-                }
-            }
-            @io.puts to_structured_output(data)
-
-        # That's unexpected
-        else
-            raise Assert
-        end
-
-        # Allows chaining
-        self
-    end
-
-
-    # -----------------------------------------------------------------
-
-
+    DESCRIPTION = 'Validate ROMs according to DAT file'
+    
     # Parser for validate command
-    ValidateParser = OptionParser.new do |opts|
-        opts.banner = "Usage: #{PROGNAME} validate [options] ROMDIR..."
+    Parser = OptionParser.new do |opts|
+        opts.banner = "Usage: #{PROGNAME} #{self} [options] ROMDIR..."
 
         opts.separator ''
-        opts.separator 'Validate ROMs according to DAT file'
+        opts.separator DESCRIPTION
         opts.separator ''
 
         opts.separator 'Options:'
-        opts.on '-s', '--summarize', "Summarize results"
+        opts.on '-s', '--summarize',         "Summarize results"
+        opts.on '-I', '--[no-]index[=FILE]', "Index file"
+        opts.on '-D', '--dat[=FILE]',        "DAT file"
         opts.separator ''
 
         opts.separator 'Structured output:'
@@ -152,28 +29,189 @@ class CLI
         opts.separator '              ... ] },'
         opts.separator '    ... ]'
         opts.separator ''
+
+        # Examples
+        opts.separator 'Examples:'
+        opts.separator "$ #{PROGNAME} #{self} romdir"
+        opts.separator "$ #{PROGNAME} #{self} -D my/dat -I my/index"
+        opts.separator ''
     end
 
 
-    # Register validate command
-    subcommand :validate, 'Validate ROMs according to DAT file',
-               ValidateParser do |argv, **opts|
-        opts[:romdirs] = argv
+    # (see Command#run)
+    def run(argv, **opts)
+        source = argv
 
-        if opts[:dat].nil? && (opts[:romdirs].size >= 1)
-            opts[:dat] = File.join(opts[:romdirs].first, '.dat')
+        if source.size == 1
+            dirinfo = @cli.dirinfo(source[0], opts)
+            opts.merge!(dirinfo)
         end
         if opts[:dat].nil?
-            warn "missing DAT file"
-            exit
+            raise Error, "missing DAT file"
         end
-        if opts[:romdirs].empty?
-            warn "missing ROM directory"
-            exit
+        if opts[:index]
+            source = opts[:index]
+        elsif source.empty?
+            raise Error, "missing ROM directory"
         end
 
-        [ opts[:romdirs], datfile: opts[:dat] ]
+        
+        validate(source, opts[:dat], summarize: opts[:summarize])
     end
+
+
+    # Validate ROMs according to DAT/Index file.
+    #
+    # @param romdirs    [Array<String>]         ROMs directories
+    # @param datfile    [String]                DAT file
+    #
+    def _validate(source, datfile)
+        dat     = @cli.dat(datfile)
+        vault   = @cli.vault(source)
+        stats   = { :not_found     => 0,
+                    :name_mismatch => 0,
+                    :wrong_place   => 0 }
+        checker = lambda { |game, rom|
+            m = vault.match(rom)
+            if m.nil? || m.empty?
+                stats[:not_found] += 1
+                'not found'
+            elsif (m = m.select {|r| r.name == rom.name }).empty?
+                stats[:name_mismatch] += 1
+                'name mismatch'
+            elsif (m = m.select { |r|
+                       store = File.basename(r.path.storage)
+                       ROMArchive::EXTENSIONS.any? { |ext|
+                           ext = Regexp.escape(ext)
+                           store.gsub(/\.#{ext}$/i, '') == game.name
+                       } || (store == game.name) || romdirs.include?(store)
+                   }).empty?
+                stats[:wrong_place] += 1
+                'wrong place'
+            end
+        }
+
+        dat.each_game do |game|
+            errors, count = 0, 0
+            yield(:game => game, :start => true)
+            game.each_rom do |rom|
+                yield(:rom => rom, :start => true)
+                count  += 1
+                errors += 1 if error = checker.call(game,rom)
+                yield(:rom => rom, :end => true,
+                      :error => error)
+            end
+            yield(:game => game, :end => true,
+                  :errors => errors, :count => count)
+        end
+
+        stats
+    end
+    
+    #
+    def validate(source, datfile, summarize: false)
+        io         = @cli.io
+        enum       = enum_for(:_validate, source, datfile)
+        summarizer = lambda { |count, io|
+            io.puts
+            io.puts "Not found     : #{count[:not_found    ]}"
+            io.puts "Name mismatch : #{count[:name_mismatch]}"
+            io.puts "Wrong place   : #{count[:wrong_place  ]}"
+        }
+
+        if @cli.output_mode == :fancy
+            gspinner, rspinner = nil, nil
+            stats              = enum.each do |data|
+                width = TTY::Screen.width
+                if data.include?(:game) && data.include?(:start)
+                    game = data[:game]
+                    name = game.name.ellipsize(width - 10, :middle)
+                    gspinner = TTY::Spinner::Multi.new("[:spinner] #{name}",
+                                                       :hide_cursor => true,
+                                                       :output      => io)
+                elsif data.include?(:error)
+                    case error = data[:error]
+                    when String then rspinner.error("-> #{error}")
+                    when nil    then rspinner.success
+                    else raise Assert
+                    end
+
+                elsif data.include?(:rom)
+                    rom  = data[:rom]
+                    name = rom.name.ellipsize(width - 25, :middle)
+                    rspinner = gspinner.register("[:spinner] #{name}")
+                    rspinner.auto_spin
+                end
+
+            end
+            if summarize
+                summarizer.call(stats, io)
+            end
+
+
+        elsif (@cli.output_mode == :text) && @cli.verbose
+            stats = enum.each do |data|
+                if    data.include?(:game) && data.include?(:start)
+                    game = data[:game]
+                    io.puts "#{game}:"
+                elsif data.include?(:rom ) && data.include?(:end  )
+                    rom   = data[:rom  ]
+                    error = data[:error]
+                    case error
+                    when String then io.puts " - FAILED: #{rom} -> #{error}"
+                    when nil    then io.puts " - OK    : #{rom}"
+                    else raise Assert
+                    end
+                end
+            end
+            if summarize
+                summarizer.call(stats, io)
+            end
+
+        elsif @cli.output_mode == :text
+            list  = []
+            stats = enum.each do |data|
+                if   data.include?(:game) && data.include?(:end) &&
+                     data[:errors].positive?
+                    game = data[:game]
+                    io.puts "#{game}"
+                    list.each do | rom:, error: |
+                        io.puts " - FAILED: #{rom} -> #{error}"
+                    end
+                    list = []
+
+                elsif data.include?(:rom) && data.include?(:end)
+                    list << data if !data[:error].nil?
+                end
+            end
+            if (stats.inject(0) {|o,(k,v)| o += v }).zero?
+                io.puts '==> PERFECT'
+            end
+            
+        elsif (@cli.output_mode == :json) || (@cli.output_mode == :yaml)
+            games = []
+            roms  = []
+            stats = enum.each do |data|
+                if    data.include?(:rom ) && data.include?(:end  )
+                    roms << { :rom     => data[:rom  ].path.entry,
+                              :error   => data[:error]
+                            }.compact
+                elsif data.include?(:game) && data.include?(:end  )
+                    games << { :game => data[:game].name,
+                               :roms => roms }
+                    roms  = []
+                end
+            end
+            io.puts to_structured_output(games)
+
+        # That's unexpected
+        else
+            raise Assert
+        end
+
+    end
+
+end
 
 end
 end

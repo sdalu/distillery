@@ -79,13 +79,6 @@ class CLI
         opts.on '-f', '--force',                         "Force operation"
         opts.on '-p', '--[no-]progress',                 "Show progress"
         opts.on '-v', '--[no-]verbose',                  "Run verbosely"
-
-        #
-        opts.separator ''
-        opts.separator 'Data specific options:'
-        opts.on '-D', '--dat=FILE',                      "DAT file"
-        opts.on '-I', '--index=FILE',                    "Index file"
-        opts.on '-d', '--destdir=DIR',                   "Destination directory"
     end
 
 
@@ -239,6 +232,38 @@ class CLI
     end
     
 
+    # Get directory metadata files
+    #
+    # @param dir	[String]	Directory to lookup
+    # @param opts	[Hash]		Directory information
+    #
+    # @return [Hash{Symbol=>[String,nil]}]
+    #
+    def dirinfo(dir, opts={})
+        info = {}
+        info[:dat  ] =
+            case val = opts[:dat]
+            when false     then nil
+            when nil, true then File.join(dir, DAT)
+                                    .then {|f| File.exists?(f) ? f : nil }
+            when String    then val.include?(File::SEPARATOR) \
+                                ? val : File.join(dir, val)
+            else raise ArgumentError
+            end
+
+        info[:index] =
+            case val = opts[:index]
+            when false     then nil
+            when nil, true then File.join(dir, INDEX)
+                                    .then {|f| File.exists?(f) ? f : nil }
+            when String    then val.include?(File::SEPARATOR) \
+                                ? val : File.join(dir, val)
+            else raise ArgumentError
+            end
+
+        info.compact
+    end
+    
     # Create DAT from file
     #
     # @param file       [String]        dat file
@@ -340,12 +365,12 @@ end
 
 
 # require_relative 'cli/check'
-# require_relative 'cli/validate'
+require_relative 'cli/validate'
 require_relative 'cli/index'
 # require_relative 'cli/rename'
 # require_relative 'cli/rebuild'
 require_relative 'cli/repack'
 # require_relative 'cli/overlap'
-# require_relative 'cli/header'
+require_relative 'cli/header'
 # require_relative 'cli/clean'
 # require_relative 'cli/v'

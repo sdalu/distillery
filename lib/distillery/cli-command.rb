@@ -42,7 +42,7 @@ class Command
     # @return [String] formatted data
     #
     def to_structured_output(data)
-        case @output_mode
+        case @cli.output_mode
         when :yaml then data.to_yaml
         when :json then data.to_json
         else raise Assert

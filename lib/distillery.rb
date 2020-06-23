@@ -3,6 +3,8 @@
 # ROM Manager
 #
 module Distillery
+    DAT   = '.dat'
+    INDEX = '.index'
 end
 
 require_relative 'distillery/version'
