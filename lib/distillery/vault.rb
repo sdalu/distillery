@@ -141,13 +141,13 @@ class Vault
     # Load a vault from an index file.
     #
     # @param file        [String]       file to load
-    # @param out_of_sync [nil,#add]     holder for out of sync files
+    # @param out_of_sync [Boolean,Proc] if true keep out of sync ROM
     #
     # @raise [LoadError] content is not loadable
     #
     # @return [Vault]
     #
-    def self.load(file, out_of_sync: nil)
+    def self.load(file, out_of_sync: true)
         archives = {}			  # Consolidating archives entries
         vault    = Vault.new		  # Vault object
         dir      = File.dirname(file)	  # Base directory
@@ -177,15 +177,16 @@ class Vault
                       ROM.new(ROM::Path::File.new(file, dir), **info)
                   end
 
+            # Has underlying storage changed?
+            unchanged = File.exists?(rom.path.file) &&
+                        (File.mtime(rom.path.file) == timestamp)
+            
             # Add rom to vault
-            vault.add_rom(rom)
-
-            # Check timestamp
-            if out_of_sync
-                unless File.exists?(rom.path.storage) &&
-                       (File.mtime(rom.path.storage) == timestamp)
-                    out_of_sync.add(rom.path.storage)
-                end
+            if unchanged || case out_of_sync
+                            when Proc        then out_of_sync.call(rom)
+                            when true, false then out_of_sync
+                            end
+                vault.add_rom(rom)
             end
         end
 

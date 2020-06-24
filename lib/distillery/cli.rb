@@ -323,7 +323,8 @@ class CLI
         # Process as Vault index
         when String
             set   = Set.new
-            vault = Vault.load(source, out_of_sync: set)
+            oos   = lambda { |rom| set << rom.path.storage ; true }
+            vault = Vault.load(source, out_of_sync: oos)
             if !set.empty?
                 warn "index file #{source} is out of sync"
                 if verbose
