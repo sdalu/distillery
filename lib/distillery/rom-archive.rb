@@ -93,6 +93,9 @@ class ROMArchive
     # @param file [String]              path to archive file
     # @param headers [Array,nil,false]  header definition list
     #
+    # @yieldparam entry			entry being processed
+    # @yieldreturn [Boolean]		should the entry be added
+    #
     # @return [ROMArchive]
     #
     def self.from_file(file, headers: nil)
@@ -101,6 +104,7 @@ class ROMArchive
 
         # Iterate on archive entries
         Distillery::Archiver.for(file).each do |entry, i|
+            next if block_given? && !yield(entry)
             path = ROM::Path::Archive.new(archive, entry)
             archive[entry] = ROM.new(path, **ROM.info(i, headers: headers))
         end
