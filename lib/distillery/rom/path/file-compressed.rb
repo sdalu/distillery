@@ -5,13 +5,14 @@ require 'set'
 require 'fileutils'
 
 require_relative '../path'
+require_relative 'file'
 
 module Distillery
 class ROM
 class Path
 
 # Path from a file
-class FileCompressed < Path
+class FileCompressed < File
     # @!visibility private
     SEEK_BUFSIZE = 16 * 1024
     
@@ -31,47 +32,17 @@ class FileCompressed < Path
                   "compression extension not supported (#{extension})"
         end
 
-        if entry.start_with?('/')
-            raise ArgumentError, "entry must be relative to basedir"
-        end
+        # Call parent
+        super(entry, basedir)
 
         # Save context
-        @entry     = entry
-        @basedir   = basedir || '.'
         @extension = extension
-    end
-
-
-    # (see ROM::Path#to_s)
-    def to_s
-        self.file
     end
 
 
     # (see ROM::Path#file)
     def file
-        if @basedir == '.'
-        then @entry + '.' + @extension
-        else ::File.join(@basedir, @entry) + '.' + @extension
-        end
-    end
-
-
-    # (see ROM::Path#storage)
-    def storage
-        @basedir
-    end
-
-
-    # (see ROM::Path#entry)
-    def entry
-        @entry
-    end
-
-
-    # (see ROM::Path#basename)
-    def basename
-        ::File.basename(@entry)
+        super + '.' + @extension
     end
 
 
@@ -119,36 +90,12 @@ class FileCompressed < Path
 
     # (see ROM#rename)
     def rename(path, force: false)
-        case path
-        when String
-        else raise ArgumentError, "unsupported path type (#{path.class})"
+        unless path.instance_of?(String) && path.end_with?(".#{@extension}")
+            raise ArgumentError, 'only supporting same compression renaming'
         end
-
-        file = if path.start_with?('/')
-               then path
-               else ::File.join(@basedir, path)
-               end
-
-        if !::File.exist?(file)
-            ::File.rename(self.file, file) == 0
-        elsif self.same?(ROM.from_file(file))
-            ::File.unlink(self.file) == 1
-        elsif force
-            ::File.rename(self.file, file) == 0
-        else
-            false
-        end
-    rescue SystemCallError
-        false
+        super(path, force: force)
     end
 
-
-    # (see ROM#delete!)
-    def delete!
-        ::File.unlink(self.file) == 1
-    rescue SystemCallError
-        false
-    end
 end
 
 end
