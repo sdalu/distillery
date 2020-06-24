@@ -14,10 +14,12 @@ class File < Path
     # @param basedir [String, nil]      base directory
     #
     def initialize(entry, basedir = nil)
+        # Sanity check
         if entry.start_with?('/')
             raise ArgumentError, "entry must be relative to basedir"
         end
 
+        # Save context
         @entry   = entry
         @basedir = basedir || '.'
     end
