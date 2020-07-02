@@ -89,9 +89,9 @@ class Repack < Command
     
     # (see Command#run)
     def run(argv, **opts)
-        repack(argv, opts[:format],
-               filters: opts[:filter], depth: opts[:depth],
-               dryrun: opts[:'dry-run'])
+        repack(argv, opts[:format], filters: opts[:filter   ],
+                                      depth: opts[:depth    ],
+                                     dryrun: opts[:'dry-run'])
     end
 
         
@@ -124,8 +124,11 @@ class Repack < Command
                     spinner.auto_spin
                 when :end
                     if errmsg
-                    then spinner.error("(#{errmsg})")
-                    else spinner.success("-> #{type}")
+                        spinner.error("(#{errmsg})")
+                    elsif @cli.verbose
+                        spinner.success("-> #{type}")
+                    else
+                        spinner.clear_line
                     end
                 end
             end
@@ -142,7 +145,7 @@ class Repack < Command
                 end
             end
             
-        # YAMLJSON mode
+        # YAML/JSON mode
         when :yaml, :json
             data = enum.select { |file, errmsg = nil, notify: | notify == :end }
                        .map    { |file, errmsg = nil, **|

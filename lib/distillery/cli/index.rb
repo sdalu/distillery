@@ -270,14 +270,12 @@ class Index < Command
     #
     def index(romdirs, type: nil, file: nil, pathstrip: nil)
         file ||= @cli.io
-        type ||= case @cli.output_mode
-                 when :json, :yaml, :text then @cli.output_mode
-                 else                   raise Assert
-                 end
+        type ||= @cli.output_mode
 
-        @cli.vault(romdirs).save(file, type: type,
-                      pathstrip: pathstrip,
-                        skipped: ->(path) { warn "SKIPPED: #{path}" } )
+        @cli.vault(romdirs)
+            .save(file, type: type,
+                   pathstrip: pathstrip,
+                     skipped: ->(path) { warn "SKIPPED: #{path}" } )
     end
 
 end
