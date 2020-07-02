@@ -1,143 +1,218 @@
 # coding: utf-8
 # SPDX-License-Identifier: EUPL-1.2
 
-require 'securerandom'
-
 module Distillery
 class CLI
 
 class Repack < Command
     using Distillery::StringEllipsize
 
-    DESCRIPTION = 'Recompress archives'
+    DESCRIPTION = 'Repack archives to the specified format'
 
     # Parser for repack command
     Parser = OptionParser.new do |opts|
         types = ROMArchive::EXTENSIONS.to_a
-        opts.banner = "Usage: #{PROGNAME} #{self} [options] ROMDIR..."
+        opts.banner = "Usage: #{PROGNAME} #{self} [options] ROMDIR|FILE..."
 
         opts.separator ''
-        opts.separator 'Repack archives to the specified format.'
+        opts.separator "#{DESCRIPTION}."
         opts.separator 'If another archive is in the way the '		\
                        'operation won\'t be carried out.'
         opts.separator ''
 
         opts.separator 'Options:'
+        opts.on '-n', '--dry-run', 'Perform a trial run with no changes made'
+        opts.on '-d', '--depth',   'Limit depth of directory scanning'
         opts.on '-F', '--format=FORMAT', types,
-                "Archive format (#{ROMArchive::PREFERED})",
-                " Value: #{types.join(', ')}"
+                "Select archive format (default: #{ROMArchive::PREFERED})",
+                " Possible values: #{types.join(', ')}"
+        opts.on       '--filter=FILTER_RULES',
+                      'Filter repack candidates (first match)' do |rules|
+            # Parse rules
+            rules =
+                rules.scan(/\G([+-])?((?:[^\,]|\\[^,])*)(?:,|\z)/)
+                     .reject {|op, filter| op.nil? && filter.empty? }
+                     .map    {|op, filter| [ op, filter.gsub(/\\(.)/, '\1') ] }
+            # Check for resulting empty rule set
+            if rules.empty?
+                raise Error, 'empty rules not allowed in --filter'
+            end
+
+            # Find default rule and cut tail
+            if dflt_idx = rules.find_index { |op, filter| filter.empty? }
+                rules = rules[0..dflt_idx]
+
+            # Otherwise add default rule
+            else
+                # Opposite action if all the same
+                ops = rules.map {|op, filter| op }.uniq
+                if ops.one?
+                    op = case ops.first
+                         when '+' then '-'
+                         when '-' then '+'
+                         end
+                    rules.push [ op,  '' ]
+                # Otherwise reject
+                else
+                    rules.push [ '-', '' ]
+                end
+            end
+            # Return rules
+            rules
+        end
         opts.separator ''
 
+        # Filter rule
+        opts.separator 'Filter rule:'
+        opts.separator '  Rules are glob-based comma-separated, '            \
+                         'the action accept(+) or reject(-)'
+        opts.separator '  is prefix to the glob. The accept prefix '         \
+                         'can be omitted.'
+        opts.separator '  A default action will be added if not specified. ' \
+                         'If all rules are reject'
+        opts.separator '  will default to accept(+) otherwise to reject(-).'
+        opts.separator ''
+
+        # Structured output
         opts.separator 'Structured output:'
         opts.separator '  [ { file: "<file>", ?error: "<error message>" },'
         opts.separator '    ... ]'
+        opts.separator ''
+
+        # Examples
+        opts.separator 'Examples:'
+        opts.separator "$ #{PROGNAME} #{self} -F 7z romdir foo/bar.zip"
+        opts.separator "$ #{PROGNAME} #{self} --filter=\'*.zip,+foo/*.7z,-\' romdir"
         opts.separator ''
     end
 
     
     # (see Command#run)
     def run(argv, **opts)
-        repack(argv, opts[:format])
+        repack(argv, opts[:format],
+               filters: opts[:filter], depth: opts[:depth],
+               dryrun: opts[:'dry-run'])
+    end
+
+        
+    # Repack archives.
+    #
+    # @param source     [Array<String>]         ROMs directories or files
+    # @param type       [String,nil]            Archive type
+    # @param filters    [Array]                 Filter each entry
+    # @param depth      [Integer,nil]           Limit directory scanning depth
+    # @param dryrun     [Boolean]		Perform trial run
+    #
+    def repack(source, type = nil, filters: nil, depth: nil, dryrun: false)
+        type ||= ROMArchive::PREFERED
+        io     = @cli.io
+        enum   = enum_for(:_repack, source, type,
+                          filters: filters, depth: depth, dryrun: dryrun)
+
+        case @cli.output_mode
+        # Fancy mode
+        when :fancy
+            spinner = nil
+            enum.each do |file, errmsg = nil, notify: |
+                case notify
+                when :start
+                    spinner = TTY::Spinner.new('[:spinner] :file',
+                                               :hide_cursor => true,
+                                               :output      => io)
+                    width = TTY::Screen.width - (9 + type.size)
+                    spinner.update(:file => file.ellipsize(width, :middle))
+                    spinner.auto_spin
+                when :end
+                    if errmsg
+                    then spinner.error("(#{errmsg})")
+                    else spinner.success("-> #{type}")
+                    end
+                end
+            end
+            
+        # Text mode
+        when :text
+            enum.each do |file, errmsg = nil, notify: |
+                next unless notify == :end
+                case errmsg
+                when String
+                    io.puts "FAILED: #{file} (#{errmsg})"
+                else
+                    io.puts "OK    : #{file} -> #{type}" if @cli.verbose
+                end
+            end
+            
+        # YAMLJSON mode
+        when :yaml, :json
+            data = enum.select { |file, errmsg = nil, notify: | notify == :end }
+                       .map    { |file, errmsg = nil, **|
+                                  { :file   => file,
+                                    :error  => errmsg }.compact
+                               }
+            io.puts to_structured_output(data)
+
+        # That's unexpected
+        else
+            raise Assert
+        end
     end
 
     
-    # Repack archives.
+    private
+
+    
+    # Repack archives
     #
-    # @param romdirs    [Array<String>]         ROMs directories
+    # @param source     [Array<String>]         ROMs directories or files
     # @param type       [String]                Archive type
+    # @param filters    [Array]                 Filter each entry
+    # @param depth      [Integer,nil]           Limit directory scanning depth
+    # @param dryrun     [Boolean]		Perform trial run
     #
-    def repack(romdirs, type = nil)
-        # Select archive type if not specified
-        type      ||= ROMArchive::PREFERED
+    # @return [Integer] number of repacked archives
+    #
+    def _repack(source, type, filters: nil, depth: nil, dryrun: false)
+        repacked = 0
+        @cli.from_romdirs_or_files(source, depth: depth) do |file, dir: '.'|
+            # Source
+            src = File.join(dir, file)
 
-        # Build support for the various output mode
-        accumulator = []
-        decorator   =
-            # Fancy mode
-            if @output_mode == :fancy
-                lambda { |file, type, &block|
-                    spinner = TTY::Spinner.new('[:spinner] :file',
-                                               :hide_cursor => true,
-                                               :output      => @io)
-                    width = TTY::Screen.width - (8 + type.size)
-                    spinner.update(:file => file.ellipsize(width, :middle))
-                    spinner.auto_spin
-                    case errmsg = block.call
-                    when String then spinner.error("(#{errmsg})")
-                    else             spinner.success("-> #{type}")
-                    end
+            # Filtering
+            if filters
+                m = filters.find { |op, filter|
+                    filter.empty? || File.fnmatch?(filter, src)
                 }
-            # Text mode
-            elsif @output_mode == :text
-                lambda { |file, type, &block|
-                    case errmsg = block.call
-                    when String
-                        @io.puts "FAILED: #{file} (#{errmsg})"
-                    else
-                        @io.puts "OK    : #{file} -> #{type}" if @verbose
-                    end
-                }
-            # JSON mode
-            elsif @output_mode == :json
-                lambda { |file, type, &block|
-                    errmsg = block.call
-                    accumulator << { :file   => file,
-                                     :error  => errmsg,
-                                   }.compact
-                }
-            # That's unexpected
-            else
+                next if m.nil? || m[0] == '-'
+            end
+            
+            # Silently ignore if unable to process this file
+            #   Either it is an archive format we don't know 
+            #   or it is a plain file.
+            next unless Archiver.for_file(src)
+            
+            # Notify of start
+            yield(file, notify: :start)
+
+            # Perform repack and notify with result
+            begin
+                errmsg = if !Archiver.repack(src, type, dryrun: dryrun)
+                             "failed"
+                         end
+                yield(file, errmsg, notify: :end)
+                repacked +=1 if errmsg.nil?
+            rescue ArchiverNotFound
+                # Shouldn't happen as we have checked the source file
+                # and only supported type (aka format) should be allowed
+                # by the command line
                 raise Assert
+            rescue Errno::EEXIST
+                yield(file, "#{type} exists", notify: :end)
             end
-        finalizer   =
-            if (@output_mode == :json) || (@output_mode == :yaml)
-                lambda {
-                    @io.puts to_structured_output(accumulator)
-                }
-            end
-
-        # Perform re-packing
-        from_romdirs(romdirs) do |srcfile, dir:|
-            # Destination file according to archive type
-            dstfile  = srcfile.dup
-            dstfile += ".#{type}" unless dstfile.sub!(/\.[^.\/]*$/, ".#{type}")
-
-            # Path for src and dst
-            src      = File.join(dir, srcfile)
-            dst      = File.join(dir, dstfile)
-
-            # If source and destination are the same
-            #  - move source out of the way as we could recompress
-            #    using another algorithm
-            if srcfile == dstfile
-                phyfile = srcfile + '.' + SecureRandom.alphanumeric(10)
-                phy     = File.join(dir, phyfile)
-                File.rename(src, phy)
-            else
-                phyfile = srcfile
-                phy     = src
-            end
-
-            # Re-compress
-            decorator.call(srcfile, type) {
-                next "#{type} exists" if File.exist?(dst)
-                archive = Distillery::Archiver.for(dst)
-                Distillery::Archiver.for(phy).each do |entry, i|
-                    archive.writer(entry) do |o|
-                        while data = i.read(32 * 1024)
-                            o.write(data)
-                        end
-                    end
-                end
-                File.unlink(phy)
-            }
         end
-
-        # Apply finalizer if required (for json)
-        finalizer&.call()
+        repacked
     end
-
-
+    
+    
 end
                                   
 end
