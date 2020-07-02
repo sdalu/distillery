@@ -293,7 +293,44 @@ class CLI
         end
     end
 
+    
+    # Potential ROM from directory or explicitly listed files
+    # @see Vault.from_dir for details
+    #
+    # @param romdirs   [Array<String>]  path to rom directoris
+    # @param depth     [Integer,nil]    exploration depth
+    #
+    # @yieldparam file [String]         file being processed
+    # @yieldparam dir: [String]         directory relative to (optional)
+    #
+    def from_romdirs_or_files(source, precheck: false, depth: nil, &block)
+        if precheck
+            source.each do |file|
+                if !File.exist?(file)
+                    raise "non-existing: #{file}"
+                elsif !File.file?(file) && !File.directory?(file)
+                    raise "unknown entry type: #{file}"
+                end
+            end
+        end
+        
+        source.each do |file|
+            unless File.exist?(file)
+                warn "skipping non-existing: #{file}"
+                next
+            end
 
+            if File.file?(file)
+                yield(file)
+            elsif File.directory?(file)
+                Vault.from_dir(file, depth: depth, &block)
+            else
+                warn "skipping unknown entry type: #{file}"
+            end
+        end
+    end
+
+    
     # Create Storage from ROMs directories
     #
     # @param romdirs    [Array<String>] array of ROMs directories
