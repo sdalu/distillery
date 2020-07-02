@@ -14,16 +14,18 @@ class Archive
     # Returns a new instance of Archive.
     #
     # @param file [String]              file holding the archive
+    # @param archiver [Archiver]	force use of the specified archiver
+    #                                   otherwise infer it from the file name
     #
     # @raise [ArchiverNotFound]         an archiver able to process this file
     #                                   has not been found
     #
-    def initialize(file)
+    def initialize(file, archiver = nil)
         @file     = file
-        @archiver = Archiver.for_file(file)
+        @archiver = archiver || Archiver.for_file(file)
 
         if @archiver.nil?
-            raise ArchiverNotFound, 'no archiver avalaible for this file'
+            raise ArchiverNotFound, "no archiver available (#{file})"
         end
     end
 
