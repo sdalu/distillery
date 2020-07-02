@@ -5,7 +5,7 @@ class CLI
 
 class Index < Command
     DESCRIPTION = 'Generate vault index'
-    OUTPUT_MODE = [ :yaml, :json ]
+    OUTPUT_MODE = [ :text, :yaml, :json ]
 
     # Parser for index command
     Parser = OptionParser.new do |opts|
@@ -110,30 +110,48 @@ class Index < Command
             index   = opts[:index] || INDEX
             basedir = romdirs[0]
             file    = File.join(basedir, index)
+            type = if    opts[:json] then :json
+                   elsif opts[:yaml] then :yaml
+                   end
             if opts.include?(:refresh) || opts.include?(:update)
                 unless File.exists?(file)
                     raise Error, "index file doesn't exists (#{file})"
                 end
+                # Try guessing type if not already required
+                type ||= case File.read(file, 4)
+                         when "---\n"   then :yaml
+                         when /^[\{\[]/ then :json
+                         end
             elsif opts.include?(:create)
                 if File.exists?(file) && !@cli.force
                     raise Error, "file #{file} exists (use --force)"
                 end
             end
 
+            # Ensure default type
+            type ||= :yaml
+            
             # Perform index operation
             Dir.chdir(basedir) do
                 if opts.include?(:refresh)
-                    update(index, adding: false)
+                    update(index, adding: false, type: type)
                 elsif opts.include?(:update)
-                    update(index, adding: true)
+                    update(index, adding: true,  type: type)
                 elsif opts.include?(:create)
-                    index(['.'], file: index)
+                    index(['.'], file: index,    type: type)
                 end
             end
         end
     end
 
-    def update(index_file, adding: true)
+
+    # Update existing index file
+    #
+    # @param index_file [String]	index file
+    # @param adding     [Boolean]	also perform adding of new file
+    # @param type       [:yaml,:json]	select output format
+    #
+    def update(index_file, adding: true, type: :yaml)
         updated = false
         
         # Load vault from index discarding out of sync ROMs
@@ -235,10 +253,7 @@ class Index < Command
         end
 
         if updated
-            vault.save(index_file, type: if    opts[:json] then :json
-                                         elsif opts[:yaml] then :yaml
-                                         else                   :yaml
-                                         end)
+            vault.save(index_file, type: type)
         else
             warn "Index is already up to date"
         end
@@ -248,21 +263,21 @@ class Index < Command
     
     # Print vault index (hash and path of each ROM)
     #
-    # @param romdirs   [Array<String>]  ROMs directories
-    # @param pathstrip [Integer,nil]    Strip path from the first directories
+    # @param romdirs    [Array<String>]   ROMs directories
+    # @param pathstrip  [Integer,nil]     Strip path from the first directories
+    # @param file       [String]	  index file
+    # @param type       [:yaml,:json,nil] select output format
     #
-    def index(romdirs, file: nil, pathstrip: nil)
-        case @cli.output_mode
-        # JSON/YAML output
-        when :json, :yaml
-            @cli.vault(romdirs).save(file || @cli.io,
-                           type: @cli.output_mode,
+    def index(romdirs, type: nil, file: nil, pathstrip: nil)
+        file ||= @cli.io
+        type ||= case @cli.output_mode
+                 when :json, :yaml, :text then @cli.output_mode
+                 else                   raise Assert
+                 end
+
+        @cli.vault(romdirs).save(file, type: type,
                       pathstrip: pathstrip,
                         skipped: ->(path) { warn "SKIPPED: #{path}" } )
-        # Unexpected output mode
-        else
-            raise Assert
-        end
     end
 
 end

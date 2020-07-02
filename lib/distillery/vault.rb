@@ -536,10 +536,10 @@ class Vault
 
     # Save vault as an index file.
     #
-    # @param dst       [String, IO]     Content destination
-    # @param type      [:yaml, :json]	Type of data to generated
-    # @param pathstrip [Integer,nil]    Strip path from the first directories
-    # @param skipped   [Proc]           Notify of skipped entry
+    # @param dst       [String, IO]        Content destination
+    # @param type      [:yaml,:json,:text] Type of data to generated
+    # @param pathstrip [Integer,nil]       Strip path from the first directories
+    # @param skipped   [Proc]              Notify of skipped entry
     #
     # @return [Boolean]
     #
@@ -585,10 +585,15 @@ class Vault
         # If empty don't emit output
         return false if data.empty?
         
-        # Convert to selected type
+        # Convert to selected format
         data = case type
                when :json then data.to_json
                when :yaml then data.to_yaml
+               when :text
+                   data.map {|path, meta|
+                       [ path, *meta.map {|k, v| "%-10s : %s" % [ k, v ] }
+                       ].join("\n")
+                   }.join("\n\n")
                else raise ArgumentError, 'unsupported mode'
                end
 
