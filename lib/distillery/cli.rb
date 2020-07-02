@@ -405,7 +405,7 @@ end
 require_relative 'cli/check'
 require_relative 'cli/validate'
 require_relative 'cli/index'
-# require_relative 'cli/rename'
+require_relative 'cli/rename'
 # require_relative 'cli/rebuild'
 require_relative 'cli/repack'
 # require_relative 'cli/overlap'

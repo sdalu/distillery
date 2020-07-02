@@ -1,8 +1,50 @@
 # SPDX-License-Identifier: EUPL-1.2
 
 module Distillery
-
 class CLI
+
+class Clean < Command
+
+    DESCRIPTION = 'Remove content not referenced in DAT file'
+
+    # Parser for clean command
+    Parser = OptionParser.new do |opts|
+        # Usage
+        opts.banner = "Usage: #{PROGNAME} clean [options] ROMDIR..."
+
+        # Description
+        opts.separator ''
+        opts.separator "#{DESCRIPTION}."
+        opts.separator ''
+    end
+
+
+    # (see Command#run)
+    def run(argv, **opts)
+        opts[:romdirs] = ARGV
+        if opts[:dat].nil? && (opts[:romdirs].size == 1)
+            opts[:dat] = File.join(opts[:romdirs].first, '.dat')
+        end
+        if opts[:destdir].nil? && (opts[:romdirs].size == 1)
+            opts[:destdir] = File.join(opts[:romdirs].first, '.trash')
+        end
+
+        if opts[:dat].nil?
+            warn "missing datfile"
+            exit
+        end
+        if opts[:romdirs].empty?
+            warn "missing ROM directory"
+            exit
+        end
+        if opts[:destdir].empty?
+            warn "missing save directory"
+            exit
+        end
+
+        clean(opts[:dat], opts[:romdirs], savedir: opts[:destdir])
+    end
+
 
     def clean(datfile, romdirs, savedir: nil)
         enum = enum_for(:_clean, datfile, romdirs, savedir: savedir)
@@ -29,6 +71,10 @@ class CLI
         self
     end
 
+
+    private
+
+    
     def _clean(datfile, romdirs, savedir: nil)
         dat        = make_dat(datfile)
         storage    = make_storage(romdirs)
@@ -55,44 +101,6 @@ class CLI
         
     end
 
-    # -----------------------------------------------------------------
-
-
-    # Parser for clean command
-    CleanParser = OptionParser.new do |opts|
-        opts.banner = "Usage: #{PROGNAME} clean [options] ROMDIR..."
-
-        opts.separator ''
-        opts.separator 'Remove content not referenced in DAT file'
-        opts.separator ''
-    end
-
-    # Register clean command
-    subcommand :clean, 'Remove content not referenced in DAT file',
-               CleanParser do |argv, **opts|
-        opts[:romdirs] = ARGV
-        if opts[:dat].nil? && (opts[:romdirs].size == 1)
-            opts[:dat] = File.join(opts[:romdirs].first, '.dat')
-        end
-        if opts[:destdir].nil? && (opts[:romdirs].size == 1)
-            opts[:destdir] = File.join(opts[:romdirs].first, '.trash')
-        end
-
-        if opts[:dat].nil?
-            warn "missing datfile"
-            exit
-        end
-        if opts[:romdirs].empty?
-            warn "missing ROM directory"
-            exit
-        end
-        if opts[:destdir].empty?
-            warn "missing save directory"
-            exit
-        end
-
-        [ opts[:dat], opts[:romdirs], savedir: opts[:destdir] ]
-    end
-
+    
 end
 end

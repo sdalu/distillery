@@ -13,7 +13,7 @@ class Validate < Command
         opts.banner = "Usage: #{PROGNAME} #{self} [options] ROMDIR..."
 
         opts.separator ''
-        opts.separator DESCRIPTION
+        opts.separator "#{DESCRIPTION}."
         opts.separator ''
 
         opts.separator 'Options:'
