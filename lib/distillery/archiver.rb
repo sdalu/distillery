@@ -3,6 +3,7 @@
 # frozen_string_literal: true
 
 require 'set'
+require 'securerandom'
 
 require_relative 'archiver/archive'
 
@@ -249,6 +250,8 @@ class Archiver
     #
     # @overload for(file)
     #  @param file [String]             archive file
+    #  @param archiver [Archiver]	force use of the specified archiver
+    #                                   otherwise infer it from the file name
     #
     #  @raise [ArchiverNotFound]        an archiver able to process this file
     #                                   has not been found
@@ -257,6 +260,8 @@ class Archiver
     #
     # @overload for(file)
     #  @param file [String]             archive file
+    #  @param archiver [Archiver]	force use of the specified archiver
+    #                                   otherwise infer it from the file name
     #
     #  @yieldparam archive [Archive]    archive instance
     #
@@ -265,8 +270,8 @@ class Archiver
     #
     #  @return [self]
     #
-    def self.for(file)
-        archive = Archive.new(file)
+    def self.for(file, archiver = nil)
+        archive = Archive.new(file, archiver)
         if block_given?
             yield(archive)
             self
@@ -276,6 +281,78 @@ class Archiver
     end
 
 
+    # Repack an archive.
+    #
+    # @param file	[String]	archive file to process
+    # @param type	[String]	archive type (extension)
+    # @param dryrun	[Boolean]	perform dry-run instead
+    #
+    # @return [Boolean]			operation sucessful
+    #
+    # @raise [ArchiverNotFound]         an archiver able to process this file
+    #                                   or the requested type was not found
+    # @raise [Errno::EEXIST]            a different archive with this name
+    #                                   already exists
+    #
+    def self.repack(file, type, dryrun: false)
+        # Get file archiver now, as file can be renamed later
+        filearchiver = Archiver.for_file(file)
+        
+        # Destination
+        dstfile  = file.dup
+        dstfile += ".#{type}" unless dstfile.sub!(/\.[^.\/]*$/, ".#{type}")
+        dst      = Archiver.for(dstfile)
+
+        # If source and destination are the same
+        #  - move source out of the way as we could recompress
+        #    using another algorithm
+        srcfile = if file == dstfile
+                      (file +'.'+ SecureRandom.alphanumeric(10)).tap {|newfile|
+                          File.rename(srcfile, newfile) unless dryrun
+                      }
+                  elsif File.exist?(dstfile)
+                      raise Errno::EEXIST
+                  else
+                      file
+                  end
+
+        # Get archiver for source
+        #  It is safe to check here, as if srcfile has been renamed
+        #  it means that archiver for it exists as it was test for dstfile
+        src = Archiver.for(srcfile, filearchiver)
+
+        # Dry run ?
+        return true if dryrun
+
+        # Perform repacking
+        begin
+            # Repack
+            src.each do |entry, i|
+                dst.writer(entry) do |o|
+                    while data = i.read(32 * 1024)
+                        o.write(data)
+                    end
+                end
+            end
+            # Remove old archive
+            File.unlink(srcfile)
+
+        #  Something went wrong, put everything back
+        rescue
+            # Remove build archive
+            File.unlink(dstfile) if File.exist?(dstfile)
+            # Put back original archive name if necessary
+            File.rename(srcfile, file) if file != srcfile
+            # Stop here
+            return false
+        end
+    
+        # Done
+        true
+    end
+
+
+    
     def initialize
         raise 'abstract class'
     end
