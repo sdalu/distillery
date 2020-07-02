@@ -60,8 +60,9 @@ class Index < Command
         # Examples
         opts.separator 'Examples:'
         opts.separator "$ #{PROGNAME} #{self} -c romdir"
+        opts.separator "$ #{PROGNAME} #{self} -u romdir"
         opts.separator "$ #{PROGNAME} #{self} -p1 romdir"
-        opts.separator "$ #{PROGNAME} -o index.yaml #{self} -p1 romdir"
+        opts.separator "$ #{PROGNAME} -o index.json -m json #{self} -p1 romdir"
         opts.separator ''
     end
 
@@ -126,7 +127,7 @@ class Index < Command
                 elsif opts.include?(:update)
                     update(index, adding: true)
                 elsif opts.include?(:create)
-                    index(romdirs, file: index)
+                    index(['.'], file: index)
                 end
             end
         end

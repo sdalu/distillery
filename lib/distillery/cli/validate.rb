@@ -175,7 +175,7 @@ class Validate < Command
                      data[:errors].positive?
                     game = data[:game]
                     io.puts "#{game}"
-                    list.each do | rom:, error: |
+                    list.each do | rom:, error:, ** |
                         io.puts " - FAILED: #{rom} -> #{error}"
                     end
                     list = []

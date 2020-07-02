@@ -285,7 +285,7 @@ class CLI
     # @param depth     [Integer,nil]    exploration depth
     #
     # @yieldparam file [String]         file being processed
-    # @yieldparam dir: [String]         directory relative to
+    # @yieldparam dir: [String,nil]     directory relative to
     #
     def from_romdirs(romdirs, depth: nil, &block)
         romdirs.each do |dir|
@@ -402,7 +402,7 @@ end
 end
 
 
-# require_relative 'cli/check'
+require_relative 'cli/check'
 require_relative 'cli/validate'
 require_relative 'cli/index'
 # require_relative 'cli/rename'

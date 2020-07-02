@@ -15,40 +15,47 @@ class Check < Command
         opts.separator ''
         opts.separator 'Options:'
         opts.on '-r', '--revert', 'Display present files instead'
+        opts.on '-I', '--[no-]index[=FILE]', "Index file"
+        opts.on '-D', '--dat[=FILE]',        "DAT file"
         opts.separator ''
     end
 
     
     # (see Command#run)
     def run(argv, **opts)
-        opts[:romdirs] = argv
-        if opts[:dat].nil? && (opts[:romdirs].size >= 1)
-            opts[:dat] = File.join(opts[:romdirs].first, '.dat')
+        source = argv
+        
+        if source.size == 1
+            dirinfo = @cli.dirinfo(source[0], opts)
+            opts.merge!(dirinfo)
         end
         if opts[:dat].nil?
-            raise Error, "missing datfile"
+            raise Error, "missing DAT file"
         end
-        if opts[:romdirs].empty?
+        if opts[:index]
+            source = opts[:index]
+        elsif source.empty?
             raise Error, "missing ROM directory"
         end
 
-        check(opts[:dat], opts[:romdirs], revert: opts[:revert] || false)
+        check(opts[:dat], source, revert: opts[:revert] || false)
     end
 
     # Check that the ROM directories form an exact match of the DAT file
     #
     # @param datfile    [String]                DAT file
-    # @param romdirs    [Array<String>]         ROMs directories
+    # @param source     [Array<String>]         ROMs directories
+    # @param source     [String]                Index file
     # @param revert	[Boolean]		Display present ROMs instead
     #
-    def check(datfile, romdirs, revert: false)
-        io       = @cli.io
-        dat      = @cli.dat(datfile)
-        storage  = @cli.storage(romdirs)
+    def check(datfile, source, revert: false)
+        io     = @cli.io
+        dat    = @cli.dat(datfile)
+        vault  = @cli.vault(source)
 
-        missing  = dat.roms - storage.roms
-        extra    = storage.roms - dat.roms
-        included = dat.roms & storage.roms
+        missing  = dat.roms - vault
+        extra    = vault - dat.roms
+        included = dat.roms & vault
 
         printer  = proc { |entry, subentries|
             io.puts "- #{entry}"
@@ -56,7 +63,7 @@ class Check < Command
         }
 
         # Warn about presence of headered ROM
-        if storage.headered
+        if vault.headered
             warn '===> Headered ROM'
         end
 
