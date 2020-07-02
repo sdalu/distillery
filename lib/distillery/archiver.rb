@@ -286,7 +286,7 @@ class Archiver
     # @return [Array<String>]
     #
     def extensions
-        [ 'zip' ]
+        raise 'abstract method'
     end
 
 
@@ -295,7 +295,7 @@ class Archiver
     # @return [Array<String>]
     #
     def mimetypes
-        [ 'application/zip' ]
+        raise 'abstract method'
     end
 
 
