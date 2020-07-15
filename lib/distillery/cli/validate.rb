@@ -10,18 +10,22 @@ class Validate < Command
     
     # Parser for validate command
     Parser = OptionParser.new do |opts|
+        # Usage
         opts.banner = "Usage: #{PROGNAME} #{self} [options] ROMDIR..."
 
+        # Description
         opts.separator ''
         opts.separator "#{DESCRIPTION}."
         opts.separator ''
 
+        # Options
         opts.separator 'Options:'
         opts.on '-s', '--summarize',         "Summarize results"
         opts.on '-I', '--[no-]index[=FILE]', "Index file"
         opts.on '-D', '--dat[=FILE]',        "DAT file"
         opts.separator ''
 
+        # Structured ouput
         opts.separator 'Structured output:'
         opts.separator '  [ { game: "<game name>",'
         opts.separator '      roms: [ {     rom: "<rom name>",'
@@ -54,60 +58,11 @@ class Validate < Command
         elsif source.empty?
             raise Error, "missing ROM directory"
         end
-
         
         validate(source, opts[:dat], summarize: opts[:summarize])
     end
 
 
-    # Validate ROMs according to DAT/Index file.
-    #
-    # @param romdirs    [Array<String>]         ROMs directories
-    # @param datfile    [String]                DAT file
-    #
-    def _validate(source, datfile)
-        dat     = @cli.dat(datfile)
-        vault   = @cli.vault(source)
-        stats   = { :not_found     => 0,
-                    :name_mismatch => 0,
-                    :wrong_place   => 0 }
-        checker = lambda { |game, rom|
-            m = vault.match(rom)
-            if m.nil? || m.empty?
-                stats[:not_found] += 1
-                'not found'
-            elsif (m = m.select {|r| r.name == rom.name }).empty?
-                stats[:name_mismatch] += 1
-                'name mismatch'
-            elsif (m = m.select { |r|
-                       store = File.basename(r.path.storage)
-                       ROMArchive::EXTENSIONS.any? { |ext|
-                           ext = Regexp.escape(ext)
-                           store.gsub(/\.#{ext}$/i, '') == game.name
-                       } || (store == game.name) || romdirs.include?(store)
-                   }).empty?
-                stats[:wrong_place] += 1
-                'wrong place'
-            end
-        }
-
-        dat.each_game do |game|
-            errors, count = 0, 0
-            yield(:game => game, :start => true)
-            game.each_rom do |rom|
-                yield(:rom => rom, :start => true)
-                count  += 1
-                errors += 1 if error = checker.call(game,rom)
-                yield(:rom => rom, :end => true,
-                      :error => error)
-            end
-            yield(:game => game, :end => true,
-                  :errors => errors, :count => count)
-        end
-
-        stats
-    end
-    
     #
     def validate(source, datfile, summarize: false)
         io         = @cli.io
@@ -211,6 +166,58 @@ class Validate < Command
 
     end
 
+
+    private
+
+    
+    # Validate ROMs according to DAT/Index file.
+    #
+    # @param romdirs    [Array<String>]         ROMs directories
+    # @param datfile    [String]                DAT file
+    #
+    def _validate(source, datfile)
+        dat     = @cli.dat(datfile)
+        vault   = @cli.vault(source)
+        stats   = { :not_found     => 0,
+                    :name_mismatch => 0,
+                    :wrong_place   => 0 }
+        checker = lambda { |game, rom|
+            m = vault.match(rom)
+            if m.nil? || m.empty?
+                stats[:not_found] += 1
+                'not found'
+            elsif (m = m.select {|r| r.name == rom.name }).empty?
+                stats[:name_mismatch] += 1
+                'name mismatch'
+            elsif (m = m.select { |r|
+                       store = File.basename(r.path.storage)
+                       ROMArchive::EXTENSIONS.any? { |ext|
+                           ext = Regexp.escape(ext)
+                           store.gsub(/\.#{ext}$/i, '') == game.name
+                       } || (store == game.name) || romdirs.include?(store)
+                   }).empty?
+                stats[:wrong_place] += 1
+                'wrong place'
+            end
+        }
+
+        dat.each_game do |game|
+            errors, count = 0, 0
+            yield(:game => game, :start => true)
+            game.each_rom do |rom|
+                yield(:rom => rom, :start => true)
+                count  += 1
+                errors += 1 if error = checker.call(game,rom)
+                yield(:rom => rom, :end => true,
+                      :error => error)
+            end
+            yield(:game => game, :end => true,
+                  :errors => errors, :count => count)
+        end
+
+        stats
+    end
+    
 end
 
 end
