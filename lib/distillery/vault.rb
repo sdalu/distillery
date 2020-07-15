@@ -143,9 +143,9 @@ class Vault
     # @param file        [String]       file to load
     # @param out_of_sync [Boolean,Proc] if true keep out of sync ROM
     #
-    # @raise [LoadError] content is not loadable
-    #
     # @return [Vault]
+    #
+    # @raise [LoadError] content is not loadable
     #
     def self.load(file, out_of_sync: true)
         archives = {}			  # Consolidating archives entries
@@ -293,8 +293,10 @@ class Vault
     # @param file     [String]          path to files relative to basedir
     # @param basedir  [String,nil]      base directory
     # @param archives [#include?]       archives tester
-    #
+    #    
     # @return [self]
+    #
+    # @raise [Archiver::Error]		failure of processing archive content
     #
     def add_from_file(file, basedir = nil, archives: ARCHIVES)
         filepath = File.join(*[ basedir, file ].compact)
@@ -321,6 +323,8 @@ class Vault
     #
     # @return [self]
     #
+    # @raise [Archiver::Error]		failure of processing archive content
+    #
     def add_from_dir(dir, depth: nil, archives: ARCHIVES)
         Vault.from_dir(dir, depth: depth) do |file, dir:|
             yield(file, dir: dir) if block_given?
@@ -344,6 +348,8 @@ class Vault
     # @yieldparam dir  [String]         directory relative to
     #
     # @return [self]
+    #
+    # @raise [Archiver::Error]		failure of processing archive content
     #
     def add_from_glob(glob, basedir: :guess, archives: ARCHIVES)
         Vault.from_dir(glob, basedir: basedir) do |file, dir:|
