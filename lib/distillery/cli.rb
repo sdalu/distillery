@@ -35,7 +35,7 @@ class CLI
     # List of output mode
     # @note All the output mode are not necessarily supported
     #       by all the commands
-    OUTPUT_MODE = [ :text, :fancy, :json, :yaml ].freeze
+    OUTPUT_MODE = [ :fancy, :text, :json, :yaml ].freeze
 
 
     # Global option parser
@@ -350,12 +350,14 @@ class CLI
     # @param source     [Array<String>] array of ROMs directories
     # @param source     [String]        index file
     # @param depth      [Integer]       directory depth
+    # @param failed     [Boolean,Proc]  if false keep going
     # @param verbose    [Boolean]       be verbose
     # @param progress   [Boolean]       show progress
     #
     # @return [Vault]
     #
-    def vault(source, depth: nil, verbose: @verbose, progress: @progress)
+    def vault(source, depth: nil, failed: true,
+              verbose: @verbose, progress: @progress)
         case source
         # Process as Vault index
         when String
@@ -374,7 +376,18 @@ class CLI
         # Process as ROM directories
         when Array
             vault = Vault::new
-            vault_adder = ->(file, dir:) { vault.add_from_file(file, dir) }
+            vault_adder = lambda { | file, dir: |
+                begin
+                    vault.add_from_file(file, dir)
+                rescue Archiver::Error
+                    if case failed
+                       when Proc        then failed.call(File.join(dir,file))
+                       when true, false then failed
+                       end
+                        raise
+                    end
+                end
+            }
             if progress
                 TTY::Spinner.new('[:spinner] :file', :hide_cursor => true,
                                                      :clear       => true)
@@ -402,13 +415,16 @@ end
 end
 
 
+# OK
+require_relative 'cli/repack'
+require_relative 'cli/index'
+
+# Work needed
 require_relative 'cli/check'
 require_relative 'cli/validate'
-require_relative 'cli/index'
 require_relative 'cli/rename'
 # require_relative 'cli/rebuild'
-require_relative 'cli/repack'
 # require_relative 'cli/overlap'
 require_relative 'cli/header'
 # require_relative 'cli/clean'
-# require_relative 'cli/v'
+
