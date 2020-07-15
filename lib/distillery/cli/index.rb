@@ -21,7 +21,7 @@ class Index < Command
                        '(only consider ROM present'
         opts.separator 'in the index file) or updated (will also add ' \
                        'missing ROMs available'
-        opts.separator 'in file system or archive).'
+        opts.separator 'in file system or archives).'
         opts.separator ''
 
         # Options
@@ -59,10 +59,12 @@ class Index < Command
 
         # Examples
         opts.separator 'Examples:'
-        opts.separator "$ #{PROGNAME} #{self} -c romdir"
-        opts.separator "$ #{PROGNAME} #{self} -u romdir"
-        opts.separator "$ #{PROGNAME} #{self} -p1 romdir"
-        opts.separator "$ #{PROGNAME} -o index.json -m json #{self} -p1 romdir"
+        opts.separator "$ #{PROGNAME} #{self} -c romdir   " 		\
+                       "# Create Index"
+        opts.separator "$ #{PROGNAME} #{self} -u romdir   "		\
+                       "# Update existing Index"
+        opts.separator "$ #{PROGNAME} #{self} -p1 romdir  "		\
+                       "# Generate textual Index (striping first-directory)"
         opts.separator ''
     end
 
@@ -272,10 +274,24 @@ class Index < Command
         file ||= @cli.io
         type ||= @cli.output_mode
 
-        @cli.vault(romdirs)
+        # Generating index can be quite long, don't trash all data
+        # in case a file processing failure, but notify at the end
+        failed_set  = Set.new
+        failed_proc = lambda {|file| failed << file ; false }
+
+        # Generate index
+        @cli.vault(romdirs, failed: failed_proc)
             .save(file, type: type,
                    pathstrip: pathstrip,
                      skipped: ->(path) { warn "SKIPPED: #{path}" } )
+
+        # Notify in case of processing file failure
+        unless failed_set.empty?
+            warn "Unable to process the following files:"
+            failed_set.each {|file|
+                warn "- #{file}"
+            }
+        end
     end
 
 end
