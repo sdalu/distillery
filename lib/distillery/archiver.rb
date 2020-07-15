@@ -287,7 +287,7 @@ class Archiver
     # @param type	[String]	archive type (extension)
     # @param dryrun	[Boolean]	perform dry-run instead
     #
-    # @return [Boolean]			operation sucessful
+    # @return [Boolean]			operation successful
     #
     # @raise [ArchiverNotFound]         an archiver able to process this file
     #                                   or the requested type was not found
@@ -339,6 +339,8 @@ class Archiver
 
         #  Something went wrong, put everything back
         rescue
+            # Notify of damaged file
+            Archiver.logger&.warn "File '#{file}' probably damaged"
             # Remove build archive
             File.unlink(dstfile) if File.exist?(dstfile)
             # Put back original archive name if necessary
