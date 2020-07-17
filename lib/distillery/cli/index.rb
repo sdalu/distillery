@@ -277,7 +277,7 @@ class Index < Command
         # Generating index can be quite long, don't trash all data
         # in case a file processing failure, but notify at the end
         failed_set  = Set.new
-        failed_proc = lambda {|file| failed << file ; false }
+        failed_proc = lambda {|file| failed_set << file ; false }
 
         # Generate index
         @cli.vault(romdirs, failed: failed_proc)
