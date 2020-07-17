@@ -8,16 +8,29 @@ class Check < Command
     
     # Parser for check command
     Parser = OptionParser.new do |opts|
+        # Usage
         opts.banner = "Usage: #{PROGNAME} check [options] ROMDIR..."
 
+        # Description
         opts.separator ''
-        opts.separator 'Check ROMs status, and display missing or extra files.'
+        opts.separator "#{DESCRIPTION} (display missing or extra files)."
         opts.separator ''
+
+        # Options
         opts.separator 'Options:'
         opts.on '-r', '--revert', 'Display present files instead'
         opts.on '-I', '--[no-]index[=FILE]', "Index file"
-        opts.on '-D', '--dat[=FILE]',        "DAT file"
+        opts.on '-D', '--dat=FILE',          "DAT file"
         opts.separator ''
+
+        # Examples
+        opts.separator 'Examples:'
+        opts.separator "$ #{PROGNAME} #{self} romdir                " \
+                       "# Look for .dat in romdir"
+        opts.separator "$ #{PROGNAME} #{self} -D foo.dat romdir     " \
+                       "# Look for foo.dat in romdir"
+        opts.separator "$ #{PROGNAME} #{self} -D ./foo.dat romdir   " \
+                       "# Look for foo.dat in current directory"
     end
 
     
@@ -74,7 +87,7 @@ class Check < Command
                 io.puts "==> No rom included"
             else
                 io.puts "==> Included roms (#{included.size}):"
-                included.dump(comptact: true, &printer)
+                included.dump(compact: true, &printer)
             end
 
         # Show mssing and extra ROMs
