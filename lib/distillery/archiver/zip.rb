@@ -89,7 +89,7 @@ class Zip < Archiver
                       InputStream.new(zip_entry.get_input_stream))
             end
         end
-    rescue ::Zip::Error => e
+    rescue ::Zip::Error
         raise ProcessingError
     end
 
