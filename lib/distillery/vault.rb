@@ -180,7 +180,7 @@ class Vault
             # Has underlying storage changed?
             unchanged = File.exists?(rom.path.file) &&
                         (File.mtime(rom.path.file) == timestamp)
-            
+
             # Add rom to vault
             if unchanged || case out_of_sync
                             when Proc        then out_of_sync.call(rom)
@@ -532,7 +532,7 @@ class Vault
             # Establish file name
             file  = rom.path.to_s
             # Get metadata
-            mtime = File.mtime(rom.path.storage).strftime('%F %T.%N %Z')
+            mtime = File.mtime(rom.path.file).strftime('%F %T.%N %Z')
             meta  = rom.info(cksum: :hex).merge(:timestamp => mtime)
             # Indexed data
             [ file,  meta ]
