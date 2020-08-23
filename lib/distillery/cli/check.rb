@@ -90,7 +90,7 @@ class Check < Command
                 included.dump(compact: true, &printer)
             end
 
-        # Show mssing and extra ROMs
+        # Show missing and extra ROMs
         else
             unless missing.empty?
                 io.puts "==> Missing roms (#{missing.size}):"

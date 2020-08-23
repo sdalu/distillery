@@ -8,16 +8,19 @@ class Header < Command
 
     # Parser for header command
     Parser = OptionParser.new do |opts|
+        # Usage
         opts.banner = "Usage: #{PROGNAME} #{self} [options] ROMDIR..."
 
+        # Description
         opts.separator ''
-        opts.separator DESCRIPTION
+        opts.separator "#{DESCRIPTION}."
         opts.separator 'Headers for the following systems are supported:'
         ROM::HEADERS.map { |name:, **| name }.uniq.sort.each do |name|
             opts.separator "  - #{name}"
         end
         opts.separator ''
 
+        # Structured output
         opts.separator 'Structured output:'
         opts.separator '  [ {     rom: "<rom name>",'
         opts.separator '         name: "<destination name>",'

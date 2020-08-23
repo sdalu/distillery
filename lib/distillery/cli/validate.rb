@@ -6,7 +6,7 @@ class CLI
 class Validate < Command
     using Distillery::StringEllipsize
 
-    DESCRIPTION = 'Validate ROMs according to DAT file'
+    DESCRIPTION = 'Validate DAT file'
     
     # Parser for validate command
     Parser = OptionParser.new do |opts|
@@ -16,6 +16,7 @@ class Validate < Command
         # Description
         opts.separator ''
         opts.separator "#{DESCRIPTION}."
+        opts.separator 'Only ROMs described in DAT file are considered.'
         opts.separator ''
 
         # Options
@@ -25,7 +26,7 @@ class Validate < Command
         opts.on '-D', '--dat[=FILE]',        "DAT file"
         opts.separator ''
 
-        # Structured ouput
+        # Structured output
         opts.separator 'Structured output:'
         opts.separator '  [ { game: "<game name>",'
         opts.separator '      roms: [ {     rom: "<rom name>",'
