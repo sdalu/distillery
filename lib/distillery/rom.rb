@@ -660,16 +660,16 @@ class ROM
     # @return [Boolean]                 status of the operation
     #
     # @yield                            Rename operation (optional)
-    # @yieldparam old [String]          old entry name
-    # @yieldparam new [String]          new entry name
+    # @yieldparam old [String]          old path
+    # @yieldparam new [String]          new path
     #
     def rename(path, force: false)
         # Deal with renaming
         ok = @path.rename(path, force: force)
 
         if ok
-            @entry = entry
-            yield(old_entry, entry) if block_given?
+            old_path, @path = @path, path
+            yield(old_path, path) if block_given?
         end
 
         ok
