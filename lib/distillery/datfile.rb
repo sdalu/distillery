@@ -95,7 +95,15 @@ class DatFile
         end
 
         @names  = @roms.each.group_by {|rom| rom.name }
-                       .transform_values {|list| list.uniq {|a,b| a.same?(b) } }
+                       .transform_values {|list|
+            # Warn: it is not possible to use #uniq as comparison is
+            #       done using hash values and here we need to use
+            #       our own comparison operator #same?
+            list.reduce([]) {|l, a|
+                l << a unless l.any? {|b| a.same?(b) }
+                l
+            }
+        }
     end
 
 
