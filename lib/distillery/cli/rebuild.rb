@@ -7,7 +7,7 @@ class Rebuild < Command
     DESCRIPTION = 'Rebuild according to DAT file'
     
     # Parser for rebuild command
-    RebuildParser = OptionParser.new do |opts|
+    Parser = OptionParser.new do |opts|
         types = ROMArchive::EXTENSIONS.to_a
 
         # Usage
