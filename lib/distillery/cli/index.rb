@@ -5,12 +5,13 @@ class CLI
 
 class Index < Command
     DESCRIPTION = 'Generate vault index'
+    STATUS      = :okay
     OUTPUT_MODE = [ :text, :yaml, :json ]
 
     # Parser for index command
     Parser = OptionParser.new do |opts|
         # Usage
-        opts.banner = "Usage: #{PROGNAME} #{self} [-p] ROMDIR...\n" \
+        opts.banner = "Usage: #{PROGNAME} #{self} [-p] ROMDIR...\n"	\
                       "       #{PROGNAME} #{self} -c|-r|-u [-I] [-y|-j] ROMDIR"
 
         # Description
@@ -19,7 +20,7 @@ class Index < Command
         opts.separator ''
         opts.separator 'The generated index file can later be refreshed ' \
                        '(only consider ROM present'
-        opts.separator 'in the index file) or updated (will also add ' \
+        opts.separator 'in the index file) or updated (will also add '	\
                        'missing ROMs available'
         opts.separator 'in file system or archives).'
         opts.separator ''
@@ -46,7 +47,7 @@ class Index < Command
         opts.separator ''
 
         # Structured output
-        opts.separator 'Structured output:'
+        opts.separator 'Structured output / Index file:'
         opts.separator '  [ {    sha256: "<hexstring>",'                \
                        '           sha1: "<hexstring>",'
         opts.separator '            md5: "<hexstring>",'                \

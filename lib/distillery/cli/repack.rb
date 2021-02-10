@@ -8,18 +8,23 @@ class Repack < Command
     using Distillery::StringEllipsize
 
     DESCRIPTION = 'Repack archives to the specified format'
+    STATUS      = :okay
 
     # Parser for repack command
     Parser = OptionParser.new do |opts|
         types = ROMArchive::EXTENSIONS.to_a
+
+        # Usage
         opts.banner = "Usage: #{PROGNAME} #{self} [options] ROMDIR|FILE..."
 
+        # Description
         opts.separator ''
         opts.separator "#{DESCRIPTION}."
         opts.separator 'If another archive is in the way the '		\
                        'operation won\'t be carried out.'
         opts.separator ''
 
+        # Options
         opts.separator 'Options:'
         opts.on '-n', '--dry-run', 'Perform a trial run with no changes made'
         opts.on '-d', '--depth',   'Limit depth of directory scanning'
@@ -81,7 +86,9 @@ class Repack < Command
 
         # Examples
         opts.separator 'Examples:'
-        opts.separator "$ #{PROGNAME} #{self} -F 7z romdir foo/bar.zip"
+        opts.separator "$ #{PROGNAME} #{self} romdir"
+        opts.separator "$ #{PROGNAME} #{self} -F zip romdir foo/bar.7z"
+        opts.separator "$ #{PROGNAME} #{self} --filter=\'*.zip\' romdir"
         opts.separator "$ #{PROGNAME} #{self} --filter=\'*.zip,+foo/*.7z,-\' romdir"
         opts.separator ''
     end
