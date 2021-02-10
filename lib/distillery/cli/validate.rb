@@ -70,9 +70,10 @@ class Validate < Command
         enum       = enum_for(:_validate, source, datfile)
         summarizer = lambda { |count, io|
             io.puts
-            io.puts "Not found     : #{count[:not_found    ]}"
-            io.puts "Name mismatch : #{count[:name_mismatch]}"
-            io.puts "Wrong place   : #{count[:wrong_place  ]}"
+            io.puts "Not found         : #{count[:not_found        ]}"
+            io.puts "Missing duplicate : #{count[:missing_duplicate]}"
+            io.puts "Name mismatch     : #{count[:name_mismatch    ]}"
+            io.puts "Wrong place       : #{count[:wrong_place      ]}"
         }
 
         if @cli.output_mode == :fancy
@@ -173,30 +174,53 @@ class Validate < Command
     
     # Validate ROMs according to DAT/Index file.
     #
-    # @param romdirs    [Array<String>]         ROMs directories
+    # @param source     [Array<String>]         ROMs directories
     # @param datfile    [String]                DAT file
     #
     def _validate(source, datfile)
-        dat     = @cli.dat(datfile)
         vault   = @cli.vault(source)
-        stats   = { :not_found     => 0,
-                    :name_mismatch => 0,
-                    :wrong_place   => 0 }
+        dat     = @cli.dat(datfile)
+        stats   = { :not_found         => 0,
+                    :missing_duplicate => 0,
+                    :name_mismatch     => 0,
+                    :wrong_place       => 0 }
         checker = lambda { |game, rom|
             m = vault.match(rom)
+
+            # Not found
             if m.nil? || m.empty?
                 stats[:not_found] += 1
                 'not found'
-            elsif (m = m.select {|r| r.name == rom.name }).empty?
-                stats[:name_mismatch] += 1
-                'name mismatch'
-            elsif (m = m.select { |r|
-                       store = File.basename(r.path.storage)
-                       ROMArchive::EXTENSIONS.any? { |ext|
-                           ext = Regexp.escape(ext)
-                           store.gsub(/\.#{ext}$/i, '') == game.name
-                       } || (store == game.name) || romdirs.include?(store)
-                   }).empty?
+
+            # Found with a different name:
+            #  - name mismatch
+            #  - rom exist but was not duplicated with the wanted named
+            elsif m.select {|r| r.name == rom.name }.empty?
+                # If all matching ROMs in vault have their name in the dat
+                # file, it's a missing duplicated
+                # Note: we need to check that the list of name matching roms
+                #       returned from the dat file hold our rom indeed.
+                unused = m.select {|r|
+                    dat.lookup(r.name)&.any? {|rom| rom.same?(r) }
+                }
+                if unused.empty?
+                    stats[:missing_duplicate] += 1
+                    'missing duplicate'
+                else
+                    stats[:name_mismatch] += 1
+                    'name mismatch'
+                end
+                
+            # Found in a different path
+            #  - name mismatch
+            #  - rom exist but was not duplicated with the wanted named
+            elsif m.select {|r|
+                      store = File.basename(r.path.storage)
+                      ROMArchive::EXTENSIONS.any? {|ext|
+                          ext = Regexp.escape(ext)
+                          store.gsub(/\.#{ext}$/i, '') == game.name
+                      } || (store == game.name) || source.include?(store)
+                  }.empty?
                 stats[:wrong_place] += 1
                 'wrong place'
             end
@@ -209,8 +233,7 @@ class Validate < Command
                 yield(:rom => rom, :start => true)
                 count  += 1
                 errors += 1 if error = checker.call(game,rom)
-                yield(:rom => rom, :end => true,
-                      :error => error)
+                yield(:rom => rom, :end => true, :error => error)
             end
             yield(:game => game, :end => true,
                   :errors => errors, :count => count)
