@@ -3,13 +3,56 @@
 module Distillery
 class CLI
 
+class Rebuild < Command
+    DESCRIPTION = 'Rebuild according to DAT file'
+    
+    # Parser for rebuild command
+    RebuildParser = OptionParser.new do |opts|
+        types = ROMArchive::EXTENSIONS.to_a
+
+        # Usage
+        opts.banner = "Usage: #{PROGNAME} #{self} [options] ROMDIR..."
+
+        # Description
+        opts.separator ''
+        opts.separator "#{DESCRIPTION} (renaming ROM and removing extra data)."
+        opts.separator 'WARN: non-matching ROM will be removed.'
+        opts.separator ''
+
+        # Options
+        opts.separator 'Options:'
+        opts.on '-F', '--format=FORMAT', types,
+                "Archive format (#{ROMArchive::PREFERED})",
+                " Value: #{types.join(', ')}"
+        opts.separator ''
+        
+        # Examples
+        opts.separator 'Examples:'
+        opts.separator "$ #{PROGNAME} #{self} romdir                " \
+                       "# Rebuild using .dat in romdir"
+    end
+
+    # (see Command#run)
+    def run(argv, **opts)
+        opts[:romdirs] = argv
+        if opts[:dat].nil? && (opts[:romdirs].size >= 1)
+            opts[:dat] = File.join(opts[:romdirs].first, '.dat')
+        end
+
+        if opts[:destdir].nil? && (opts[:romdirs].size >= 1)
+            opts[:destdir] = opts[:romdirs].first
+        end
+
+        rebuild(opts[:destdir], opts[:dat], opts[:romdirs], opts[:format])
+    end
+
     def rebuild(gamedir, datfile, romdirs, type = nil)
         # Select archive type if not specified
         type      ||= ROMArchive::PREFERED
 
 
-        dat     = make_dat(datfile)
-        storage = make_storage(romdirs)
+        dat     = @cli.dat(datfile)
+        storage = @cli.storage(romdirs)
 
         # gamedir can be one of the romdir we must find a clever
         # way to avoid overwriting file
@@ -24,40 +67,7 @@ class CLI
         FileUtils.remove_dir(romsdir)
     end
 
-    # -----------------------------------------------------------------
-
-
-    # Parser for header command
-    RebuildParser = OptionParser.new do |opts|
-        types = ROMArchive::EXTENSIONS.to_a
-        opts.banner = "Usage: #{PROGNAME} rebuild [options] ROMDIR..."
-        opts.separator ''
-        opts.separator 'Rebuild ROMs to match DAT file' 		\
-                       ' (renaming ROM and removing extra data).'
-        opts.separator 'WARN: non-matching ROM will be removed.'
-        opts.separator ''
-        opts.separator 'Options:'
-        opts.on '-F', '--format=FORMAT', types,
-                "Archive format (#{ROMArchive::PREFERED})",
-                " Value: #{types.join(', ')}"
-        opts.separator ''
-    end
-
-
-    # Register rebuild command
-    subcommand :rebuild, 'Rebuild according to DAT file',
-               RebuildParser do |argv, **opts|
-        opts[:romdirs] = argv
-        if opts[:dat].nil? && (opts[:romdirs].size >= 1)
-            opts[:dat] = File.join(opts[:romdirs].first, '.dat')
-        end
-
-        if opts[:destdir].nil? && (opts[:romdirs].size >= 1)
-            opts[:destdir] = opts[:romdirs].first
-        end
-
-        [ opts[:destdir], opts[:dat], opts[:romdirs], opts[:format] ]
-    end
+end
 
 end
 end
