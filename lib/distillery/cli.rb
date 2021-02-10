@@ -139,8 +139,8 @@ class CLI
         @output_mode = OUTPUT_MODE.first
         @io          = $stdout
         @force       = false
-        @verbose     = true
-        @progress    = true
+        @verbose     = false
+        @progress    = false
 
         @argv        = []
         @opts        = {}
@@ -372,7 +372,7 @@ class CLI
                     end
                 end
             end
-            
+
         # Process as ROM directories
         when Array
             vault = Vault::new
