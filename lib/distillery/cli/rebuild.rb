@@ -58,7 +58,7 @@ class Rebuild < Command
         # way to avoid overwriting file
 
         romsdir = File.join(gamedir, '.roms')
-        storage.build_roms_directory(romsdir, delete: true)
+        storage.build_roms_directory(romsdir, force: true, delete: true)
 
         vault = Vault.new
         vault.add_from_dir(romsdir)
