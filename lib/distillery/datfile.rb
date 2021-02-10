@@ -93,19 +93,34 @@ class DatFile
                       "Game '#{game}' defined multiple times in DAT file"
             end
         end
+
+        @names  = @roms.each.group_by {|rom| rom.name }
+                       .transform_values {|list| list.uniq {|a,b| a.same?(b) } }
     end
 
 
-    # Identify ROM which have the same fullname/name but are different
+    # Lookup ROM by name
     #
-    # @param type [:fullname, :name]	Check by fullname or name
+    # @param name [String]		ROM name to lookup
+    #
+    # @return [Array<ROM>]
+    # @return nil if not found
+    #
+    def lookup(name)
+        @names[name]
+    end
+    
+    
+    # Identify ROM which have the same path/name but are different
+    #
+    # @param type [:path, :name]	Check by path or name
     #
     # @return [Hash{String => Array<ROM>}]
     #
-    def clash(type = :fullname)
+    def clash(type = :path)
         grp = case type
-              when :fullname then @roms.each.group_by(&:fullname)
-              when :name     then @roms.each.group_by(&:name)
+              when :path then @roms.each.group_by(&:path)
+              when :name then @roms.each.group_by(&:name)
               else raise ArgumentError
               end
 
