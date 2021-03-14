@@ -155,6 +155,7 @@ class ClrMamePro
             else
                 unexpected!(token: token)
             end
+            @s.skip /\s+/
         end
 
         [ meta, games, resources ]
@@ -210,12 +211,14 @@ class ClrMamePro
     # @raise [ContentError]	parsing error
     #
     def unexpected!(h)
-        raise ArgumentError if h&.size > 1
         if h.nil? || h.empty?
             raise ContentError, "unexpected parsing state"
         else
+            _in  = h.delete(:in)
+            raise ArgumentError if h&.size > 1
             k, v = h.first
-            raise ContentError, "unexpected #{k}: '#{v}'"
+            raise ContentError, "unexpected #{k}: '#{v}'" +
+                                (_in ? " (in: #{_in})" : '')
         end
     end
 
@@ -241,11 +244,12 @@ class ClrMamePro
                 when 'description'  then o[k] = get_token(String)
                 when 'category'     then o[k] = get_token(String)
                 when 'version'      then o[k] = get_token(String)
+                when 'homepage'     then o[k] = get_token(String)
                 when 'author'       then o[k] = get_token(String)
                 when 'forcemerging' then o[k] = get_token(['none','split','full'])
                 when 'forcezipping' then o[k] = get_token(['yes','no'])
                 when ')'            then unget_token ; break
-                else unexpected!(token: k)
+                else unexpected!(token: k, in: 'clrmamempro')
                 end
             }
         }
@@ -262,6 +266,14 @@ class ClrMamePro
                 when 'description'  then o[k] = get_token(String)
                 when 'year'         then o[k] = get_token(Integer)
                 when 'manufacturer' then o[k] = get_token(String)
+                when 'esrb_rating'  then o[k] = get_token(String)
+                when 'serial'       then o[k] = get_token(String)
+                when 'developer'    then o[k] = get_token(String)
+                when 'publisher'    then o[k] = get_token(String)
+                when 'releaseyear'  then o[k] = get_token(Integer)
+                when 'releasemonth' then o[k] = get_token(Integer)
+                when 'releaseday'   then o[k] = get_token(Integer)
+                when 'users'        then o[k] = get_token(Integer)
                 when 'rom'
                     get_token('(')
                     (o[k] ||= []) << parse_rom
@@ -273,7 +285,7 @@ class ClrMamePro
                 when 'sampleof'     then o[k] = get_token(String)
                 when 'sample'       then (o[k] ||= []) << get_token(String)
                 when ')'            then unget_token ; break
-                else unexpected!(token: k)
+                else unexpected!(token: k, in: 'game')
                 end
             }
         }
@@ -292,7 +304,7 @@ class ClrMamePro
                     (o[k] ||= []) << parse_rom
                     get_token(')')
                 when ')'            then unget_token ; break
-                else unexpected!(token: k)
+                else unexpected!(token: k, in: 'resource')
                 end
             }
         }
@@ -307,11 +319,12 @@ class ClrMamePro
                 when 'merge'  then o[k] = get_token(String)
                 when 'size'   then o[k] = get_token(Integer)
                 when 'flags'  then o[k] = get_token(String)
+                when 'serial' then o[k] = get_token(String)
                 when 'crc'    then o[k] = get_token(/^\h{8}$/)
                 when 'md5'    then o[k] = get_token(/^\h{32}$/)
                 when 'sha1'   then o[k] = get_token(/^\h{40}$/)
                 when ')'      then unget_token ; break
-                else unexpected!(token: k)
+                else unexpected!(token: k, in: 'rom')
                 end
             }
         }
@@ -330,7 +343,7 @@ class ClrMamePro
                 when 'md5'    then o[k] = get_token(/^\h{32}$/)
                 when 'sha1'   then o[k] = get_token(/^\h{40}$/)
                 when ')'      then unget_token ; break
-                else unexpected!(token: k)
+                else unexpected!(token: k, in: 'disk')
                 end
             }
         }
