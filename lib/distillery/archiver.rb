@@ -308,7 +308,7 @@ class Archiver
         #    using another algorithm
         srcfile = if file == dstfile
                       (file +'.'+ SecureRandom.alphanumeric(10)).tap {|newfile|
-                          File.rename(srcfile, newfile) unless dryrun
+                          File.rename(file, newfile) unless dryrun
                       }
                   elsif File.exist?(dstfile)
                       raise Errno::EEXIST
