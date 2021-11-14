@@ -21,7 +21,7 @@ class Archive
     #                                   has not been found
     #
     def initialize(file, archiver = nil)
-        @file     = file
+        @file     = file.dup.freeze
         @archiver = archiver || Archiver.for_file(file)
 
         if @archiver.nil?
@@ -30,6 +30,15 @@ class Archive
     end
 
 
+    # Returns the file this archive instance is bound to
+    #
+    # @return [String]  path to archive
+    #
+    def file
+        @file
+    end
+
+    
     # Iterate over each archive entry
     #
     # @yieldparam entry [String]        entry name
