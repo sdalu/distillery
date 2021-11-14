@@ -52,12 +52,32 @@ class Archive
     end
 
 
+    # Does the archive exist?
+    #
+    # @return [Boolean]
+    #
+    def exist?
+        @archiver.exist?(@file)
+    end
+
+
     # Is the archive emtpy?
     #
     # @return [Boolean]
     #
     def empty?
         @archiver.empty?(@file)
+    end
+
+
+    # Check if the archive contains the specified entry
+    #
+    # @param entry [String]             entry name
+    #
+    # @return [Boolean]
+    #
+    def include?(entry)
+        @archiver.include?(@file, entry)
     end
 
 
@@ -87,6 +107,18 @@ class Archive
     end
 
 
+    # Check if two entries are identical
+    #
+    # @param entry_1 [String]             entry 1
+    # @param entry_2 [String]             entry 2
+    #
+    # @return [Boolean]
+    #
+    def same?(entry_1, entry_2)
+        @archiver.same?(file, entry_1, entry_2)
+    end
+
+    
     # Delete the entry from the archive
     #
     # @param entry [String]             entry name
@@ -97,6 +129,31 @@ class Archive
         @archiver.delete!(@file, entry)
     end
 
+
+    # Create a copy of the archive entry
+    #
+    # @param entry     [String]         entry name
+    # @param new_entry [String]         new entry name
+    # @param force     [Boolean]        remove previous entry if necessary
+    #
+    # @return [Boolean]         operation status
+    #
+    def copy(entry, new_entry, force: false)
+        @archiver.copy(@file, entry, new_entry, force: force)
+    end
+
+    
+    # Rename archive entry
+    #
+    # @param entry [String]             entry name
+    # @param new_entry [String]         new entry name
+    # @param force [Boolean]            remove previous entry if necessary
+    #
+    # @return [Boolean]         operation status
+    #
+    def rename(entry, new_entry, force: false)
+        @archiver.rename(@file, entry, new_entry, force: force)
+    end
 end
 
 end

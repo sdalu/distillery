@@ -62,6 +62,12 @@ class External < Archiver
                 :args   => cfg .dig('delete', 'args') ||
                            dflt.dig('delete', 'args'),
             }
+            rename     = {
+                :cmd    => cfg .dig('rename', 'cmd')  || cfg .dig('cmd') ||
+                           dflt.dig('rename', 'cmd')  || dflt.dig('cmd'),
+                :args   => cfg .dig('rename', 'args') ||
+                           dflt.dig('rename', 'args'),
+            }
 
             if list[:cmd].nil? || read[:cmd].nil?
                 Archiver.logger&.warn do
@@ -75,24 +81,31 @@ class External < Archiver
                 end
             end
 
-            Archiver.register(External.new(list, read, write, delete,
+            Archiver.register(External.new(list, read, write, delete, rename,
                                            extensions: extensions,
                                             mimetypes: mimetypes))
         end
     end
 
 
-    def initialize(list, read, write = nil, delete = nil,
+    def initialize(list, read, write = nil, delete = nil, rename = nil,
                    extensions:, mimetypes: nil)
         @list       = list
         @read       = read
         @write      = write
         @delete     = delete
+        @rename     = rename
         @extensions = extensions
         @mimetypes  = mimetypes
     end
 
 
+    # (see Archiver#write_enabled)
+    def write_enabled
+        ! @write.nil?
+    end
+
+    
     # (see Archiver#extensions)
     def extensions
         @extensions
@@ -117,47 +130,24 @@ class External < Archiver
     end
 
 
-    # (see Archiver#reader)
-    def reader(file, entry)
-        subst = { '$(infile)' => file, '$(entry)' => entry }
-        cmd   = @read[:cmd ]
-        args  = @read[:args]&.map { |e| e.gsub(/\$\(\w+\)/, subst) }
-
-        Open3.popen2(cmd, *args) do |stdin, stdout|
-            stdin.close_write
-            yield(InputStream.new(stdout))
-        end
+    # (see Archiver#empty?)
+    def empty?(file)
+        entries(file).none?
     end
 
-
-    # (see Archiver#writer)
-    def writer(file, entry)
-        subst = { '$(infile)' => file, '$(entry)' => entry }
-        cmd   = @write[:cmd ]
-        args  = @write[:args]&.map { |e| e.gsub(/\$\(\w+\)/, subst) }
-
-        Open3.popen2(cmd, *args) do |stdin, _stdout|
-            yield(OutputStream.new(stdin))
-        end
+    
+    # (see Archiver#include?)
+    def include?(file, entry)
+        entries(file).any? { |e| e == entry }
     end
 
-
-    # (see Archiver#delete!)
-    def delete!(file, entry)
-        subst = { '$(infile)' => file, '$(entry)' => entry }
-        cmd   = @delete[:cmd ]
-        args  = @delete[:args].map { |e| e.gsub(/\$\(\w+\)/, subst) }
-
-        Open3.popen2(cmd, *args) do |stdin, _stdout|
-            stdin.close_write
-        end
-
-        true
-    end
-
-
+    
     # (see Archiver#entries)
     def entries(file)
+        # Ensure file exist
+        exist!(file)
+
+        # Perform operation
         subst     = { '$(infile)' => file }
         cmd       = @list[:cmd      ]
         args      = @list[:args     ]&.map { |e| e.gsub(/\$\(\w+\)/, subst) }
@@ -182,6 +172,103 @@ class External < Archiver
             m[:entry]
         }.compact
     end
+
+
+    # (see Archiver#reader)
+    def reader(file, entry)
+        # Ensure file exist
+        include!(file, entry)
+
+        # Perform operation
+        subst = { '$(infile)' => file, '$(entry)' => entry }
+        cmd   = @read[:cmd ]
+        args  = @read[:args]&.map { |e| e.gsub(/\$\(\w+\)/, subst) }
+
+        Open3.popen2(cmd, *args) do |stdin, stdout|
+            stdin.close_write
+            yield(InputStream.new(stdout))
+        end
+    end
+
+
+    # (see Archiver#writer)
+    def writer(file, entry)
+        # Sanity check
+        raise OperationNotSupported if @write.nil?
+
+        # Perform operation
+        subst = { '$(infile)' => file, '$(entry)' => entry }
+        cmd   = @write[:cmd ]
+        args  = @write[:args]&.map { |e| e.gsub(/\$\(\w+\)/, subst) }
+
+        Open3.popen2(cmd, *args) do |stdin, _stdout|
+            yield(OutputStream.new(stdin))
+        end
+    end
+
+
+    # (see Archiver#delete!)
+    def delete!(file, entry)
+        # If no dedicated operation, fallback to emulation
+        return super(file, entry) if @delete.nil?
+
+        # Ensure file exist
+        exist!(file)
+        
+        # Perform operation
+        subst = { '$(infile)' => file, '$(entry)' => entry }
+        cmd   = @delete[:cmd ]
+        args  = @delete[:args].map { |e| e.gsub(/\$\(\w+\)/, subst) }
+        
+        Open3.popen2(cmd, *args) do |stdin, _stdout|
+            stdin.close_write
+        end
+        
+        # Done
+        true
+    end
+
+
+    # (see Archiver#rename)
+    def rename(file, entry, new_entry, force: false)
+        # If no dedicated operation, fallback to emulation
+        return super(file, entry, new_entry, force: force) if @rename.nil?
+        
+        # Ensure file exist
+        exist!(file)
+
+        # Deal with existing new entry
+        #  (as we need consistent behaviour between external implementations)
+        if include?(file, new_entry)
+            # If same, consider it done and remove entry
+            if same?(file, entry, new_entry)
+                delete!(file, entry)
+                return true
+            end
+            # If force not enabled, stop here
+            if !force
+                return false
+            end
+            
+            # Ensure existing entry is removed
+            delete!(file, new_entry)
+        end
+        
+        # Perform operation
+        subst = { '$(infile)' => file,
+                  '$(entry)' => entry, '$(new_entry)' => new_entry }
+        cmd   = @rename[:cmd ]
+        args  = @rename[:args].map { |e| e.gsub(/\$\(\w+\)/, subst) }
+
+        Open3.popen2(cmd, *args) do |stdin, _stdout|
+            stdin.close_write
+        end
+        
+        # Done
+        true
+    end
+
+
 end
 
 end
