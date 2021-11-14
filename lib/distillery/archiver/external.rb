@@ -219,10 +219,8 @@ class External < Archiver
         subst = { '$(infile)' => file, '$(entry)' => entry }
         cmd   = @delete[:cmd ]
         args  = @delete[:args].map { |e| e.gsub(/\$\(\w+\)/, subst) }
-        
-        Open3.popen2(cmd, *args) do |stdin, _stdout|
-            stdin.close_write
-        end
+
+        stdout, stderr, status = Open3.capture3(cmd, *args)
         
         # Done
         true
@@ -260,9 +258,7 @@ class External < Archiver
         cmd   = @rename[:cmd ]
         args  = @rename[:args].map { |e| e.gsub(/\$\(\w+\)/, subst) }
 
-        Open3.popen2(cmd, *args) do |stdin, _stdout|
-            stdin.close_write
-        end
+        stdout, stderr, status = Open3.capture3(cmd, *args)
         
         # Done
         true
