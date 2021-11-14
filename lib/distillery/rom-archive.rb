@@ -224,9 +224,10 @@ class ROMArchive
     #
     def delete!(entry)
         Distillery::Archiver.for(@file) do |archive|
-            archive.delete!(entry).tap { |deleted|
+            archive.delete!(entry).tap do |deleted|
                 File.unlink(@file) if deleted && archive.empty?
-            }
+            rescue Errno::ENOENT
+            end
         end
     end
 
