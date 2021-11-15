@@ -10,6 +10,30 @@ class Archiver
 # Selection of external program is described in external.yaml
 #
 class External < Archiver
+    module ArgumentSubstitution
+        refine String do
+            def with_arguments(args)
+                # Normalize keys
+                subst = args.transform_keys {|k| k.to_s }
+
+                # Derive new keys (special escaping)
+                zip_entry_escape = ->(s) { s.gsub(/[\\\[\]]/, '\\\\\0') }
+                if s = subst['entry']
+                    subst['entry:zip'] = zip_entry_escape.(s)
+                end
+                if s = subst['new_entry']
+                    subst['new_entry:zip'] = zip_entry_escape.(s)
+                end
+
+                # Perform substitution
+                subst.transform_keys! {|k| "$(#{k})" }
+                self.gsub(/\$\(\w+(?::\w+)?\)/, subst)
+            end
+        end
+    end
+    using ArgumentSubstitution
+
+    # Adding ourselves to the Archiver list
     Archiver.add self
 
     # Perform registration of the various archive format
@@ -148,9 +172,9 @@ class External < Archiver
         exist!(file)
 
         # Perform operation
-        subst     = { '$(infile)' => file }
+        subst     = { :infile => file }
         cmd       = @list[:cmd      ]
-        args      = @list[:args     ]&.map { |e| e.gsub(/\$\(\w+\)/, subst) }
+        args      = @list[:args     ]&.map { |e| e.with_arguments(subst) }
         parser    = @list[:parser   ]
         validator = @list[:validator]
 
@@ -180,9 +204,9 @@ class External < Archiver
         include!(file, entry)
 
         # Perform operation
-        subst = { '$(infile)' => file, '$(entry)' => entry }
+        subst = { :infile => file, :entry => entry }
         cmd   = @read[:cmd ]
-        args  = @read[:args]&.map { |e| e.gsub(/\$\(\w+\)/, subst) }
+        args  = @read[:args]&.map { |e| e.with_arguments(subst) }
 
         Open3.popen2(cmd, *args) do |stdin, stdout|
             stdin.close_write
@@ -197,9 +221,9 @@ class External < Archiver
         raise OperationNotSupported if @write.nil?
 
         # Perform operation
-        subst = { '$(infile)' => file, '$(entry)' => entry }
+        subst = { :infile => file, :entry => entry }
         cmd   = @write[:cmd ]
-        args  = @write[:args]&.map { |e| e.gsub(/\$\(\w+\)/, subst) }
+        args  = @write[:args]&.map { |e| e.with_arguments(subst) }
 
         Open3.popen2(cmd, *args) do |stdin, _stdout|
             yield(OutputStream.new(stdin))
@@ -216,9 +240,9 @@ class External < Archiver
         exist!(file)
         
         # Perform operation
-        subst = { '$(infile)' => file, '$(entry)' => entry }
+        subst = { :infile => file, :entry => entry }
         cmd   = @delete[:cmd ]
-        args  = @delete[:args].map { |e| e.gsub(/\$\(\w+\)/, subst) }
+        args  = @delete[:args]&.map { |e| e.with_arguments(subst) }
 
         stdout, stderr, status = Open3.capture3(cmd, *args)
         
@@ -253,17 +277,17 @@ class External < Archiver
         end
         
         # Perform operation
-        subst = { '$(infile)' => file,
-                  '$(entry)' => entry, '$(new_entry)' => new_entry }
+        subst = { :infile    => file,
+                  :entry     => entry, :new_entry => new_entry
+                }
         cmd   = @rename[:cmd ]
-        args  = @rename[:args].map { |e| e.gsub(/\$\(\w+\)/, subst) }
+        args  = @rename[:args]&.map { |e| e.with_arguments(subst) }
 
         stdout, stderr, status = Open3.capture3(cmd, *args)
         
         # Done
         true
     end
-
 
 end
 

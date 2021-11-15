@@ -1,5 +1,10 @@
 # SPDX-License-Identifier: EUPL-1.2
 
+#
+# Note: for `entry` and `new_entry` you can apply the `zip` modifier
+#       so that entries are correctly escaped in case of zip/unzip program
+#
+
 7z:
   extension: 7z
   mimetype: application/x-7z-compressed
@@ -27,7 +32,7 @@ zip:
     parser: (?<entry>.+)
   read:
     cmd: unzip
-    args: [ -p, $(infile), $(entry) ]
+    args: [ -p, $(infile), $(entry:zip) ]
   delete:
     cmd: zip
-    args: [ -d, $(infile), $(entry) ]
+    args: [ -d, $(infile), $(entry:zip) ]
