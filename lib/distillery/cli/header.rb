@@ -32,15 +32,11 @@ class Header < Command
 
     # (see Command#run)
     def run(argv, **opts)
-        opts[:romdirs] = ARGV
-        if opts[:destdir].nil? && (opts[:romdirs].size == 1)
-            opts[:destdir] = File.join(opts[:romdirs].first, '.header')
-        end
-        if opts[:romdirs].empty?
-            raise Error, "missing ROM directory"
-        end
+        romdirs   = retrieve_romdirs!  argv
+        destdir   = retrieve_destdir! opts[:destdir], romdirs, '.header',
+                                      dirname: 'Header'
 
-        header(opts[:destdir], opts[:romdirs])
+        header(destdir, romdirs)
     end
 
 
@@ -50,8 +46,9 @@ class Header < Command
     # @param romdirs    [Array<String>]         ROMs directories
     #
     def header(hdrdir, romdirs)
-        io   = @cli.io
-        enum = enum_for(:_header, hdrdir, romdirs)
+        io      = @cli.io
+        storage = @cli.storage(romdirs)
+        enum    = storage.enum_for(:extract_headers, destdir)
 
         case @cli.output_mode
         # Text output
