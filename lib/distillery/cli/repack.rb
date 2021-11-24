@@ -9,7 +9,8 @@ class Repack < Command
 
     DESCRIPTION = 'Repack archives to the specified format'
     STATUS      = :okay
-
+    OUTPUT_MODE = [ :fancy, :text, :yaml, :json ]
+    
     # Parser for repack command
     Defaults = { :format => ROMArchive::PREFERED }
     Parser   = OptionParser.new do |opts|
