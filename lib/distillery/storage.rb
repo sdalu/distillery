@@ -43,6 +43,51 @@ class Storage
     end
 
 
+    # Check the vault for an exact match with the DAT.
+    #
+    # @param dat        [DatFile]               DAT file.
+    # @param included   [#<<, #call]            Accumulator for included
+    # @param missing    [#<<, #call]            Accumulator for missing
+    # @param extra      [#<<, #call]            Accumulator for extra
+    #
+    # @return [Boolean] perfect match
+    #
+    # @yieldparam group   [String]
+    # @yieldparam entries [Array<String>]
+    #
+    def check(dat, included: nil, missing: nil, extra: nil)
+        importer = ->(holder, vault) do
+            return if holder.nil?
+            vault.dump(compact: true) do |storage, entries|
+                if    holder.respond_to?(:<<)
+                    holder << [ storage, entries ]
+                elsif holder.respond_to?(:call)
+                    holder.call(storage, entries)
+                else raise ArgumentError, "must respond to << or call"
+                end
+            end
+        end
+
+        no_missing = if missing
+                         (dat.roms - @roms).tap {|roms|
+                             importer.(missing, roms)
+                         }.empty?
+                     end
+        no_extra   = if extra
+                         (@roms - dat.roms).tap {|roms|
+                             importer.(extra, roms)
+                         }.empty?
+                     end        
+        perfect    = if included || (missing.nil? || extra.nil?)
+                         (dat.roms & @roms).tap {|roms|
+                             importer.(included, roms)
+                         }.size == dat.roms.size
+                     end
+
+        # Have we a perfect match ?
+        perfect || (no_missing && no_extra)
+    end
+
     def build_games(dat, vault)
         dat.games.each do |game|
             puts "Building: #{game}"
@@ -198,4 +243,3 @@ class Storage
 end
 
 end
-
