@@ -152,7 +152,7 @@ class Validate < Command
                     roms  = []
                 end
             end
-            io.puts to_structured_output(games)
+            @cli.write_structured_output(games)
 
         # That's unexpected
         else

@@ -159,7 +159,7 @@ class Repack < Command
                                   { :file   => file,
                                     :error  => errmsg }.compact
                                }
-            io.puts to_structured_output(data)
+            @cli.write_structured_output(data)
 
         # That's unexpected
         else

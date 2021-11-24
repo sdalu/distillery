@@ -35,20 +35,6 @@ class Command
     end
 
     
-    # Format data according to the selected (structured) output mode
-    #
-    # @param data 	[Object]	data to format
-    #
-    # @return [String] formatted data
-    #
-    def to_structured_output(data)
-        case @cli.output_mode
-        when :yaml then data.to_yaml
-        when :json then data.to_json
-        else raise Assert
-        end
-    end
-
     protected
 
 

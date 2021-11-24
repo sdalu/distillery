@@ -153,6 +153,34 @@ class CLI
     attr_reader :verbose
     attr_reader :progress
 
+    def structured_output_mode?
+        (@output_mode == :yaml) || (@output_mode == :json)
+    end
+
+    # Format data according to the selected (structured) output mode
+    #
+    # @param data 	[Object]	data to format
+    #
+    # @return [String] formatted data
+    #
+    def to_structured_output(data)
+        case @output_mode
+        when :yaml then data.to_yaml
+        when :json then data.to_json
+        else raise Assert
+        end
+    end
+
+    # Format data according to the selected (structured) output mode
+    #
+    # @param data 	[Object]	data to format
+    #
+    # @return [String] formatted data
+    #
+    def write_structured_output(data, io = @io)
+        io.puts self.to_structured_output(data)
+    end
+    
     
     # Run command line
     #
