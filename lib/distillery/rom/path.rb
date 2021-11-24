@@ -33,7 +33,7 @@ class Path
     end
 
 
-    # Entry
+    # Entry (subpath relative to the storage)
     #
     # @return [String]
     #

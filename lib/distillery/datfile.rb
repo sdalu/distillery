@@ -147,6 +147,7 @@ class DatFile
 
     # @return [Vault]
     attr_reader :roms
+    alias vault roms
 
 
     # Iterate over each ROM

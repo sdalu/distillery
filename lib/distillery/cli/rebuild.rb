@@ -21,6 +21,8 @@ class Rebuild < Command
 
         # Options
         opts.separator 'Options:'
+        opts.on '-D', '--dat=FILE',        "DAT file"
+        opts.on '-d', '--destdir=DIR',     "Rebuild directory"
         opts.on '-F', '--format=FORMAT', types,
                 "Archive format (#{ROMArchive::PREFERED})",
                 " Value: #{types.join(', ')}"
@@ -30,6 +32,8 @@ class Rebuild < Command
         opts.separator 'Examples:'
         opts.separator "$ #{PROGNAME} #{self} romdir                " \
                        "# Rebuild using .dat in romdir"
+        opts.separator "$ #{PROGNAME} #{self} -d out romdir         " \
+                       "# Rebuild to out directory"
     end
 
     # (see Command#run)
@@ -42,25 +46,24 @@ class Rebuild < Command
         rebuild(destdir, datfile, romdirs, format)
     end
 
-    def rebuild(gamedir, datfile, romdirs, type = nil)
+    def rebuild(destdir, datfile, romdirs, type = nil)
         # Select archive type if not specified
-        type      ||= ROMArchive::PREFERED
+        type   ||= ROMArchive::PREFERED
 
+        dat      = @cli.dat(datfile)
+        storage  = @cli.storage(romdirs)
 
-        dat     = @cli.dat(datfile)
-        storage = @cli.storage(romdirs)
-
-        # gamedir can be one of the romdir we must find a clever
+        # destdir can be one of the romdir we must find a clever
         # way to avoid overwriting file
 
-        romsdir = File.join(gamedir, '.roms')
-        storage.build_roms_directory(romsdir, force: true, delete: true)
+        romdir = File.join(destdir, '.roms')
+        storage.build_roms_directory(romdir, force: true, delete: true)
 
         vault = Vault.new
-        vault.add_from_dir(romsdir)
+        vault.add_from_dir(romdir)
 
-        storage.build_games_archives(gamedir, dat, vault, type)
-        FileUtils.remove_dir(romsdir)
+        storage.build_games_archives(destdir, dat, vault, type)
+        FileUtils.remove_dir(romdir)
     end
 
 end

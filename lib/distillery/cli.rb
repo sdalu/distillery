@@ -294,7 +294,8 @@ class CLI
 
         info.compact
     end
-    
+
+
     # Create DAT from file
     #
     # @param file       [String]        dat file
@@ -364,14 +365,15 @@ class CLI
     
     # Create Storage from ROMs directories
     #
-    # @param romdirs    [Array<String>] array of ROMs directories
+    # @param source     [Array<String>] array of ROMs directories
+    # @param source     [String]        index file
     # @param verbose    [Boolean]       be verbose
     #
     # @return [Storage]
     #
-    def storage(romdirs, depth: nil,
+    def storage(source, depth: nil,
                      verbose: @verbose, progress: @progress)
-        Storage::new(vault(romdirs, depth: depth, verbose: verbose,
+        Storage::new(vault(source, depth: depth, verbose: verbose,
                            progress: progress))
     end
 
@@ -457,5 +459,5 @@ require_relative 'cli/rename'
 require_relative 'cli/rebuild'
 # require_relative 'cli/overlap'
 require_relative 'cli/header'
-# require_relative 'cli/clean'
+require_relative 'cli/clean'
 

@@ -230,6 +230,27 @@ class ROMArchive
         end
     end
 
+    
+    # Rename ROM and physical content.
+    #
+    # @note Renaming could lead to silent removing if same ROM is on its way
+    #
+    # @param entry [String]             archive entry
+    # @param path  [String]             new ROM path
+    # @param force [Boolean]            remove previous file if necessary
+    #
+    # @return [Boolean]                 status of the operation
+    #
+    # @yield                            Rename operation (optional)
+    # @yieldparam old [String]          old path
+    # @yieldparam new [String]          new path
+    #
+    def rename(entry, path, force: false)
+        Distillery::Archiver.for(@file) do |archive|
+            archive.rename(entry, path, force: force)
+        end
+    end
+    
 
     # Read ROM.
     # @note Can be costly, to be avoided.

@@ -4,17 +4,29 @@ module Distillery
 class CLI
 
 class Clean < Command
-
     DESCRIPTION = 'Remove content not referenced in DAT file'
-
+    OUTPUT_MODE = [ :text ]
+    
     # Parser for clean command
     Parser = OptionParser.new do |opts|
         # Usage
-        opts.banner = "Usage: #{PROGNAME} clean [options] ROMDIR..."
+        opts.banner = "Usage: #{PROGNAME} #{self} [options] ROMDIR"
 
         # Description
         opts.separator ''
         opts.separator "#{DESCRIPTION}."
+        opts.separator ''
+
+        # Options
+        opts.separator 'Options:'
+        opts.on '-I', '--[no-]index[=FILE]', "Index file"
+        opts.on '-D', '--dat=FILE',          "DAT file"
+        opts.on '-d', '--destdir=DIR',       "Directory for removed ROMs"
+        opts.separator ''
+
+        # Examples
+        opts.separator 'Examples:'
+        opts.separator "$ #{PROGNAME} #{self} romdir"
         opts.separator ''
     end
 
@@ -31,16 +43,17 @@ class Clean < Command
     end
 
 
-    def clean(datfile, romdirs, savedir: nil)
-        enum = enum_for(:_clean, datfile, romdirs, savedir: savedir)
+    def clean(datfile, source, savedir: nil)
+        enum = enum_for(:_clean, datfile, source, savedir: savedir)
+        io   = @cli.io
 
-        case @output_mode
+        case @cli.output_mode
         # Text/Fancy output
         when :text, :fancy
             enum.each do |rom, moved:, error: nil |
                 moved ||= '<deleted>'
                 error   = " (#{error})" if error
-                @io.puts "- #{rom} -> #{moved}#{error}"
+                io.puts "- #{rom} -> #{moved}#{error}"
             end
 
         # JSON/YAML output
@@ -60,10 +73,10 @@ class Clean < Command
     private
 
     
-    def _clean(datfile, romdirs, savedir: nil)
-        dat        = make_dat(datfile)
-        storage    = make_storage(romdirs)
-        extra      = storage.roms - dat.roms
+    def _clean(datfile, source, savedir: nil)
+        dat      = @cli.dat(datfile)
+        vault    = @cli.vault(source)
+        extra    = vault - dat.roms
 
         if savedir
             extra.copy(savedir) do |rom, copied:, as:|
@@ -86,6 +99,6 @@ class Clean < Command
         
     end
 
-    
+end    
 end
 end

@@ -95,7 +95,11 @@ class Archive < Path
 
     # (see ROM::Path#rename)
     def rename(path, force: false)
-        # XXX: improve like String
+        case path
+        when String
+        else raise ArgumentError, "unsupport path type (#{path.class})"
+        end
+
         @archive.rename(@entry, path, force: force)
     end
 

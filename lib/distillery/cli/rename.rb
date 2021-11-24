@@ -33,10 +33,11 @@ class Rename < Command
     #
     # @param datfile    [String]                DAT file    
     # @param romdirs    [Array<String>]         ROMs directories
+    # @param romdirs    [String]                Index file
     #
-    def rename(datfile, romdirs)
+    def rename(datfile, source)
         dat     = @cli.dat(datfile)
-        storage = @cli.storage(romdirs)
+        storage = @cli.storage(source)
 
         storage.rename(dat)
     end
