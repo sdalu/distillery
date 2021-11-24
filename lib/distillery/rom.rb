@@ -304,14 +304,15 @@ class ROM
                   "unsupported checksums <#{unsupported_cksums.join(',')}>"
         end
 
-        # Ensure checksum for nul-size ROM
-        if size.zero?
-            cksums = Hash[CHECKSUMS_DEF.map { |k, (_, z)| [ k, z ] }]
-        end
-
-        # Ensure offset for existing ROM size
-        if !size.nil? && offset.nil?
-            offset = 0 
+        if !size.nil?
+            # Ensure checksum for nul-size ROM
+            if size.zero?
+                cksums = Hash[CHECKSUMS_DEF.map {|k, (_, z)| [k,z] }]
+            end
+            # Ensure offset
+            if offset.nil?
+                offset = 0 
+            end
         end
         
         # Initialize
