@@ -25,9 +25,12 @@ class Vault
     GLOB_PATTERN_REGEX = /(?<!\\)[?*}{\[\]]/.freeze
 
     # Convenient proc to be used with #dump
-    PRINTER      = proc { |entry, subentries|
-        puts "- #{entry}"
-        Array(subentries).each { |entry| puts "  . #{entry}" }
+    PRINTER  = proc { |storage, entries|
+        bullet = if storage
+                 then puts "- #{storage}" ; '  .'
+                 else                       '-'
+                 end
+        Array(entries).each {|entry| puts "#{bullet} #{entry}" }
     }
 
     # List of ROM checksums
@@ -500,8 +503,8 @@ class Vault
     #
     # @return [self]
     #
-    # @yieldparam group   [String]
-    # @yieldparam entries [Array<String>]
+    # @yieldparam group   [String,nil]
+    # @yieldparam entries [Array<String>,String]
     #
     def dump(compact: false)
         self.each.inject({}) { |grp, rom|
@@ -512,7 +515,7 @@ class Vault
                    end
 
             if storage.nil?
-                roms.each { |rom| yield(rom.path.entry, nil) }
+                roms.each { |rom| yield(nil, rom.path.entry) }
             elsif compact && (size == roms.size)
                 yield(storage)
             else
