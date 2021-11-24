@@ -36,22 +36,12 @@ class Check < Command
     
     # (see Command#run)
     def run(argv, **opts)
-        source = argv
+        romdirs   = retrieve_romdirs!  argv
+        datfile   = retrieve_datfile!  opts[:dat    ], romdirs
+        indexfile = retrieve_indexfile opts[:index  ], romdirs
+        show      = opts[:show]
         
-        if source.size == 1
-            dirinfo = @cli.dirinfo(source[0], opts)
-            opts.merge!(dirinfo)
-        end
-        if opts[:dat].nil?
-            raise Error, "missing DAT file"
-        end
-        if opts[:index]
-            source = opts[:index]
-        elsif source.empty?
-            raise Error, "missing ROM directory"
-        end
-
-        check(opts[:dat], source, revert: opts[:revert] || false)
+        check(datfile, indexfile || romdirs, show)
     end
 
     # Check that the ROM directories form an exact match of the DAT file

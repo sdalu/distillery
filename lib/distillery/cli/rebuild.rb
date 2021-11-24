@@ -34,16 +34,12 @@ class Rebuild < Command
 
     # (see Command#run)
     def run(argv, **opts)
-        opts[:romdirs] = argv
-        if opts[:dat].nil? && (opts[:romdirs].size >= 1)
-            opts[:dat] = File.join(opts[:romdirs].first, '.dat')
-        end
-
-        if opts[:destdir].nil? && (opts[:romdirs].size >= 1)
-            opts[:destdir] = opts[:romdirs].first
-        end
-
-        rebuild(opts[:destdir], opts[:dat], opts[:romdirs], opts[:format])
+        romdirs = retrieve_romdirs!(argv)
+        datfile = retrieve_datfile!(opts[:dat    ], romdirs)
+        destdir = retrieve_destdir!(opts[:destdir], romdirs, dirname: 'Rebuild')
+        format  = opts[:format]
+        
+        rebuild(destdir, datfile, romdirs, format)
     end
 
     def rebuild(gamedir, datfile, romdirs, type = nil)

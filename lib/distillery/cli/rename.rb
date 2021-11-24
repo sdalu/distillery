@@ -21,20 +21,11 @@ class Rename < Command
     
     # (see Command#run)
     def run(argv, **opts)
-        opts[:romdirs] = argv
-        if opts[:dat].nil? && (opts[:romdirs].size == 1)
-            opts[:dat] = File.join(opts[:romdirs].first, '.dat')
-        end
-        if opts[:dat].nil?
-            warn 'missing datfile'
-            exit
-        end
-        if opts[:romdirs].empty?
-            warn 'missing ROM directory'
-            exit
-        end
+        romdirs   = retrieve_romdirs!  argv
+        datfile   = retrieve_datfile!  opts[:dat    ], romdirs
+        indexfile = retrieve_indexfile opts[:index  ], romdirs
 
-        rename(opts[:dat], opts[:romdirs])
+        rename(datfile, indexfile || romdirs)
     end
 
     

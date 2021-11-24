@@ -21,28 +21,13 @@ class Clean < Command
 
     # (see Command#run)
     def run(argv, **opts)
-        opts[:romdirs] = ARGV
-        if opts[:dat].nil? && (opts[:romdirs].size == 1)
-            opts[:dat] = File.join(opts[:romdirs].first, '.dat')
-        end
-        if opts[:destdir].nil? && (opts[:romdirs].size == 1)
-            opts[:destdir] = File.join(opts[:romdirs].first, '.trash')
-        end
-
-        if opts[:dat].nil?
-            warn "missing datfile"
-            exit
-        end
-        if opts[:romdirs].empty?
-            warn "missing ROM directory"
-            exit
-        end
-        if opts[:destdir].empty?
-            warn "missing save directory"
-            exit
-        end
-
-        clean(opts[:dat], opts[:romdirs], savedir: opts[:destdir])
+        romdirs   = retrieve_romdirs!  argv
+        datfile   = retrieve_datfile!  opts[:dat    ], romdirs
+        indexfile = retrieve_indexfile opts[:index  ], romdirs
+        destdir   = retrieve_destdir!  opts[:destdir], romdirs, '.trash',
+                                       dirname: 'Removed ROMs'
+        
+        clean(datfile, indexfile || romdirs, savedir: destdir)
     end
 
 

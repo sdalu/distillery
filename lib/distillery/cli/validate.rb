@@ -45,22 +45,12 @@ class Validate < Command
 
     # (see Command#run)
     def run(argv, **opts)
-        source = argv
-
-        if source.size == 1
-            dirinfo = @cli.dirinfo(source[0], opts)
-            opts.merge!(dirinfo)
-        end
-        if opts[:dat].nil?
-            raise Error, "missing DAT file"
-        end
-        if opts[:index]
-            source = opts[:index]
-        elsif source.empty?
-            raise Error, "missing ROM directory"
-        end
+        romdirs   = retrieve_romdirs!  argv
+        datfile   = retrieve_datfile!  opts[:dat    ], romdirs
+        indexfile = retrieve_indexfile opts[:index  ], romdirs
+        summarize = opts[:summarize]
         
-        validate(source, opts[:dat], summarize: opts[:summarize])
+        validate(indexfile || romdirs, datfile, summarize: summarize)
     end
 
 
