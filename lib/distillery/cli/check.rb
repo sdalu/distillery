@@ -41,10 +41,10 @@ class Check < Command
 
         # Structured output
         opts.separator 'Structured output:'
-        opts.separator '  { ?missing:  [ "<rom name>", ... ],'
-        opts.separator '    ?extra:    { "<game name>: [ "<rom name>", ... ],'
+        opts.separator '  {  ?missing: [ "<rom name>", ... ],'
+        opts.separator '       ?extra: { "<game name>": [ "<rom name>", ... ],'
         opts.separator '                 ... },'
-        opts.separator '    ?included: { "<game name>: [ "<rom name>", ... ],'
+        opts.separator '    ?included: { "<game name>": [ "<rom name>", ... ],'
         opts.separator '                 ... },'
         opts.separator '  }'
         opts.separator ''

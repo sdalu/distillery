@@ -130,12 +130,9 @@ class Repack < Command
                     spinner.update(:file => file.ellipsize(width, :middle))
                     spinner.auto_spin
                 when :end
-                    if errmsg
-                        spinner.error("(#{errmsg})")
-                    elsif @cli.verbose
-                        spinner.success("-> #{type}")
-                    else
-                        spinner.clear_line
+                    if    errmsg       then spinner.error("(#{errmsg})")
+                    elsif @cli.verbose then spinner.success("-> #{type}")
+                    else                    spinner.clear_line
                     end
                 end
             end
