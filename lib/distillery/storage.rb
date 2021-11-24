@@ -43,6 +43,14 @@ class Storage
     end
 
 
+    # Extract headers
+    def extract_headers(destdir)
+        @roms.copy(destdir, part: :header, force: @force) do |rom, as:, copied:, **|
+            yield(rom, as: as, copied: copied)
+        end
+    end
+    
+
     # Check the vault for an exact match with the DAT.
     #
     # @param dat        [DatFile]               DAT file.

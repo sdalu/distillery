@@ -96,15 +96,7 @@ class Header < Command
         end
     end
 
-
-    # @!visibility private
-    def _header(hdrdir, romdirs)
-        @cli.vault(romdirs)
-          .copy(hdrdir, part: :header, force: @force) do |rom, as:, copied:, **|
-            yield(rom, as: as, copied: copied)
-        end
-    end
-end
+ end
 
 end
 end
