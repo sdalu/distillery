@@ -7,7 +7,8 @@ class Rebuild < Command
     DESCRIPTION = 'Rebuild according to DAT file'
     
     # Parser for rebuild command
-    Parser = OptionParser.new do |opts|
+    Defaults = { :format => ROMArchive::PREFERED }
+    Parser   = OptionParser.new do |opts|
         types = ROMArchive::EXTENSIONS.to_a
 
         # Usage
@@ -24,8 +25,8 @@ class Rebuild < Command
         opts.on '-D', '--dat=FILE',        "DAT file"
         opts.on '-d', '--destdir=DIR',     "Rebuild directory"
         opts.on '-F', '--format=FORMAT', types,
-                "Archive format (#{ROMArchive::PREFERED})",
-                " Value: #{types.join(', ')}"
+                "Archive format (default: #{Defaults[:format]})",
+                " Values: #{types.join(', ')}"
         opts.separator ''
         
         # Examples
@@ -38,18 +39,15 @@ class Rebuild < Command
 
     # (see Command#run)
     def run(argv, **opts)
-        romdirs = retrieve_romdirs!(argv)
-        datfile = retrieve_datfile!(opts[:dat    ], romdirs)
-        destdir = retrieve_destdir!(opts[:destdir], romdirs, dirname: 'Rebuild')
+        romdirs = retrieve_romdirs! argv
+        datfile = retrieve_datfile! opts[:dat    ], romdirs
+        destdir = retrieve_destdir! opts[:destdir], romdirs, dirname: 'Rebuild'
         format  = opts[:format]
         
         rebuild(destdir, datfile, romdirs, format)
     end
 
-    def rebuild(destdir, datfile, romdirs, type = nil)
-        # Select archive type if not specified
-        type   ||= ROMArchive::PREFERED
-
+    def rebuild(destdir, datfile, romdirs, type = ROMArchive::PREFERED)
         dat      = @cli.dat(datfile)
         storage  = @cli.storage(romdirs)
 
