@@ -210,6 +210,9 @@ class CLI
         end
 
         # Parse command, and run it
+        if cmdk.const_defined?(:Defaults)
+            opts.merge!(cmdk::Defaults) {|k, o, n| o }
+        end
         if cmdk.const_defined?(:Parser)
             cmdk::Parser.order!(argv, into: opts)
         end
