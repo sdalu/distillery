@@ -11,7 +11,8 @@ class Repack < Command
     STATUS      = :okay
 
     # Parser for repack command
-    Parser = OptionParser.new do |opts|
+    Defaults = { :format => ROMArchive::PREFERED }
+    Parser   = OptionParser.new do |opts|
         types = ROMArchive::EXTENSIONS.to_a
 
         # Usage
@@ -29,7 +30,7 @@ class Repack < Command
         opts.on '-n', '--dry-run', 'Perform a trial run with no changes made'
         opts.on '-d', '--depth',   'Limit depth of directory scanning'
         opts.on '-F', '--format=FORMAT', types,
-                "Select archive format (default: #{ROMArchive::PREFERED})",
+                "Select archive format (default: #{Defaults[:format]})",
                 " Possible values: #{types.join(', ')}"
         opts.on       '--filter=FILTER_RULES',
                       'Filter repack candidates (first match)' do |rules|
@@ -110,8 +111,7 @@ class Repack < Command
     # @param depth      [Integer,nil]           Limit directory scanning depth
     # @param dryrun     [Boolean]		Perform trial run
     #
-    def repack(source, type = nil, filters: nil, depth: nil, dryrun: false)
-        type ||= ROMArchive::PREFERED
+    def repack(source, type, filters: nil, depth: nil, dryrun: false)
         io     = @cli.io
         enum   = enum_for(:_repack, source, type,
                           filters: filters, depth: depth, dryrun: dryrun)
