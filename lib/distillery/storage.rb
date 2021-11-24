@@ -88,6 +88,77 @@ class Storage
         perfect || (no_missing && no_extra)
     end
 
+
+    # Validate ROMs according to DAT/Index file.
+    #
+    # @param dat        [DatFile]               DAT file.
+    #
+    def validate(dat)
+        stats   = { :not_found         => 0,
+                    :missing_duplicate => 0,
+                    :name_mismatch     => 0,
+                    :wrong_place       => 0 }
+        checker = lambda { |game, rom|
+            m = @roms.match(rom)
+
+            # Not found
+            if m.nil? || m.empty?
+                stats[:not_found] += 1
+                'not found'
+
+            # Found with a different name:
+            #  - name mismatch
+            #  - rom exist but was not duplicated with the wanted named
+            elsif m.select {|r| r.name == rom.name }.empty?
+                # If all matching ROMs in vault have their name in the dat
+                # file, it's a missing duplicated
+                # Note: we need to check that the list of name matching roms
+                #       returned from the dat file hold our rom indeed.
+                unused = m.select {|r|
+                    dat.lookup(r.name)&.any? {|rom| rom.same?(r) }
+                }
+                if unused.empty?
+                    stats[:name_mismatch] += 1
+                    'name mismatch' +
+                        (m.size == 1 ? " (#{m[0].name})" : '')
+                else
+                    stats[:missing_duplicate] += 1
+                    'missing duplicate'
+                end
+                
+            # Found in a different path
+            #  - name mismatch
+            #  - rom exist but was not duplicated with the wanted named
+            elsif m.select {|r|
+                      store = File.basename(r.path.storage)
+                      ROMArchive::EXTENSIONS.any? {|ext|
+                          ext = Regexp.escape(ext)
+                          store.gsub(/\.#{ext}$/i, '') == game.name
+                      } || (store == game.name) || source.include?(store)
+                  }.empty?
+                stats[:wrong_place] += 1
+                'wrong place'
+            end
+        }
+
+        dat.each_game do |game|
+            errors, count = 0, 0
+            yield(:game => game, :start => true)
+            game.each_rom do |rom|
+                yield(:rom => rom, :start => true)
+                count  += 1
+                errors += 1 if error = checker.call(game, rom)
+                yield(:rom => rom, :end => true, :error => error)
+            end
+            yield(:game => game, :end => true,
+                  :errors => errors, :count => count)
+        end
+
+        stats
+    end
+
+
+    
     def build_games(dat, vault)
         dat.games.each do |game|
             puts "Building: #{game}"
@@ -160,41 +231,6 @@ class Storage
     end
 
 
-    #
-    # @param rom
-    # @param game [Game, String, nil]
-    # @param :boolean, :symbol, :mixed
-    #
-    def validate(rom, game = nil, romdirs = nil, returns: :boolean)
-        m = @roms.match(rom)
-
-        g_name = case game
-                 when Game   then game.name
-                 when String then game
-                 when nil    then nil
-                 else raise ArgumentError,
-                            "game must be an instance of Game or String"
-                 end
-        
-        sym = if m.nil? || m.empty?
-                  :not_found
-              elsif (m = m.select {|r| r.name == rom.name }).empty?
-                  :name_mismatch
-              elsif !g_name.nil? && !romdirs.nil? &&
-                    (m = m.select { |r|
-                         store = File.basename(r.path.storage)
-                         ROMArchive::EXTENSIONS.any? { |ext|
-                             ext = Regexp.escape(ext)
-                             store.gsub(/\.#{ext}$/i, '') == g_name 
-                         } || (store == g_name) || romdirs.include?(store)
-                     }).empty?
-                  :wrong_place
-              else
-                  :validated
-              end
-
-    end
-
 
     def rename(dat)
         @roms.each do |rom|
@@ -243,3 +279,4 @@ class Storage
 end
 
 end
+

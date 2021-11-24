@@ -57,7 +57,10 @@ class Validate < Command
     #
     def validate(source, datfile, summarize: false)
         io         = @cli.io
-        enum       = enum_for(:_validate, source, datfile)
+        dat        = @cli.dat(datfile)
+        storage    = @cli.storage(source)
+
+        enum       = storage.enum_for(:validate, dat)
         summarizer = lambda { |count, io|
             io.puts
             io.puts "Not found         : #{count[:not_found        ]}"
@@ -158,80 +161,6 @@ class Validate < Command
 
     end
 
-
-    private
-
-    
-    # Validate ROMs according to DAT/Index file.
-    #
-    # @param source     [Array<String>]         ROMs directories
-    # @param datfile    [String]                DAT file
-    #
-    def _validate(source, datfile)
-        vault   = @cli.vault(source)
-        dat     = @cli.dat(datfile)
-        stats   = { :not_found         => 0,
-                    :missing_duplicate => 0,
-                    :name_mismatch     => 0,
-                    :wrong_place       => 0 }
-        checker = lambda { |game, rom|
-            m = vault.match(rom)
-
-            # Not found
-            if m.nil? || m.empty?
-                stats[:not_found] += 1
-                'not found'
-
-            # Found with a different name:
-            #  - name mismatch
-            #  - rom exist but was not duplicated with the wanted named
-            elsif m.select {|r| r.name == rom.name }.empty?
-                # If all matching ROMs in vault have their name in the dat
-                # file, it's a missing duplicated
-                # Note: we need to check that the list of name matching roms
-                #       returned from the dat file hold our rom indeed.
-                unused = m.select {|r|
-                    dat.lookup(r.name)&.any? {|rom| rom.same?(r) }
-                }
-                if unused.empty?
-                    stats[:missing_duplicate] += 1
-                    'missing duplicate'
-                else
-                    stats[:name_mismatch] += 1
-                    'name mismatch'
-                end
-                
-            # Found in a different path
-            #  - name mismatch
-            #  - rom exist but was not duplicated with the wanted named
-            elsif m.select {|r|
-                      store = File.basename(r.path.storage)
-                      ROMArchive::EXTENSIONS.any? {|ext|
-                          ext = Regexp.escape(ext)
-                          store.gsub(/\.#{ext}$/i, '') == game.name
-                      } || (store == game.name) || source.include?(store)
-                  }.empty?
-                stats[:wrong_place] += 1
-                'wrong place'
-            end
-        }
-
-        dat.each_game do |game|
-            errors, count = 0, 0
-            yield(:game => game, :start => true)
-            game.each_rom do |rom|
-                yield(:rom => rom, :start => true)
-                count  += 1
-                errors += 1 if error = checker.call(game,rom)
-                yield(:rom => rom, :end => true, :error => error)
-            end
-            yield(:game => game, :end => true,
-                  :errors => errors, :count => count)
-        end
-
-        stats
-    end
-    
 end
 
 end
