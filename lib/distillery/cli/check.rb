@@ -19,6 +19,7 @@ class Check < Command
         # Description
         opts.separator ''
         opts.separator "#{DESCRIPTION} (display missing or extra files)."
+        opts.separator "The checking process doesn't care if ROMs are misnamed or misplaced."
         opts.separator ''
 
         # Options
