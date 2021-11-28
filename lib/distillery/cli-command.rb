@@ -47,7 +47,7 @@ class Command
     # @return [Array<String>]   list of ROM directory
     #
     def retrieve_romdirs!(romdirs)
-        romdirs.tap {|o|
+        romdirs.dup.tap {|o|
             raise Error, "ROM directory not specified" if o.empty?
         }
     end

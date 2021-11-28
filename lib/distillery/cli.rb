@@ -451,6 +451,7 @@ end
 # OK
 require_relative 'cli/repack'
 require_relative 'cli/index'
+require_relative 'cli/irb'
 
 # Work needed
 require_relative 'cli/check'
