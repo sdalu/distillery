@@ -55,6 +55,48 @@ class Vault
     DIR_PRUNING  = Set[ '.dat', '.index' ].freeze
 
 
+    # Check if the file is allowed to the vault.
+    # @note file in {IGNORE_FILES}, directory in {IGNORE_DIRS},
+    #       directories holding a {DIR_PRUNING} file or starting with a
+    #       dot are ignored
+    #
+    # @param dir       [String]         path to directory
+    # @param file      [String]         path to file relative to dir
+    # @param depth     [Integer,nil]    exploration depth
+    #
+    # @returns [nil] if not able to decide (doesn't exist, incorrect path)
+    # @returns [Boolean] if allowed
+    #
+    def self.allowed_file?(dir, file, depth: nil)
+        path     = File.join(dir, file)
+        basename = File.basename(file)
+        parts    = file.split(File::Separator)
+
+        # Check if ignored file
+        return false if IGNORE_FILES.include?(basename)
+
+        # Check if beyond maximal depth
+        return false if !depth.nil? && parts.size > depth
+
+        # Check subpath components
+        (0..(parts.size-2)).lazy
+            .map {|i| [ File.join(dir, *parts[0..i]), parts[i] ]}
+            .each do |path, basename|
+            if IGNORE_DIRS.include?(basename) ||
+               basename.start_with?('.')      ||
+               DIR_PRUNING.any? { |f| File.exist?(File.join(path,f)) }
+                return false
+            end
+        end
+
+        # Check if not a file
+        return nil if !FileTest.file?(path)
+
+        # Ok
+        return true
+    end
+
+
     # Potential ROM from directory.
     # @note file in {IGNORE_FILES}, directory in {IGNORE_DIRS},
     #       directories holding a {DIR_PRUNING} file or starting with a
