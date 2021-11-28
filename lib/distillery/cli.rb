@@ -35,7 +35,7 @@ class CLI
     # List of output mode
     # @note All the output mode are not necessarily supported
     #       by all the commands
-    OUTPUT_MODE = [ :fancy, :text, :json, :yaml ].freeze
+    OUTPUT_MODE = [ :text, :fancy, :json, :yaml ].freeze
 
 
     # Global option parser
