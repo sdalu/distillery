@@ -9,7 +9,8 @@ class Index < Command
     OUTPUT_MODE = [ :text, :yaml, :json ]
 
     # Parser for index command
-    Parser = OptionParser.new do |opts|
+    Defaults = { :trim => false }
+    Parser   = OptionParser.new do |opts|
         # Usage
         opts.banner = "Usage: #{PROGNAME} #{self} [-p] ROMDIR...\n"	\
                       "       #{PROGNAME} #{self} -c|-r|-u [-I] [-y|-j] ROMDIR"
@@ -42,6 +43,7 @@ class Index < Command
         opts.on '-c', '--create',  'Create index file'
         opts.on '-r', '--refresh', 'Refresh index file (delete/update)'
         opts.on '-u', '--update',  'Update index file (add/delete/update)'
+        opts.on '-t', '--trim',    'Trim not allowed files from index'
         opts.on '-y', '--yaml',    'Produce YAML index (default)'
         opts.on '-j', '--json',    'Produce JSON index'
         opts.separator ''
@@ -137,9 +139,9 @@ class Index < Command
             # Perform index operation
             Dir.chdir(basedir) do
                 if opts.include?(:refresh)
-                    update(index, adding: false, type: type)
+                    update(index, adding: false, type: type, trim: opts[:trim])
                 elsif opts.include?(:update)
-                    update(index, adding: true,  type: type)
+                    update(index, adding: true,  type: type, trim: opts[:trim])
                 elsif opts.include?(:create)
                     index(['.'], file: index,    type: type)
                 end
@@ -151,21 +153,38 @@ class Index < Command
     # Update existing index file
     #
     # @param index_file [String]	index file
+    # @param trim       [Boolean]       trim not allowed file on index load
     # @param adding     [Boolean]	also perform adding of new file
     # @param type       [:yaml,:json]	select output format
     #
-    def update(index_file, adding: true, type: :yaml)
+    def update(index_file, trim: false, adding: true, type: :yaml)
         updated = false
-        
-        # Load vault from index discarding out of sync ROMs
-        # but keep track of them (file and path)
+
+        # Load vault from index
+        #  discarding out of sync ROMs / trimmed files 
+        #  but keep track of them (file and path)
         files_changed = {}
         oos_proc      = lambda do |rom|
             (files_changed[rom.path.file] ||= []) << rom.path
             false   # Reject
         end
-        vault = Vault.load(index_file, out_of_sync: oos_proc)
+        files_trimmed = {}
+        trimmed_proc  = lambda do |rom|
+            (files_trimmed[rom.path.file] ||= []) << rom.path if trim
+            !trim   # Reject if trimming
+        end
+        
+        vault = Vault.load(index_file,
+                           out_of_sync: oos_proc, trimmed: trimmed_proc)
 
+        # Notify about trimmed files
+        files_trimmed.each do |file, paths|
+            paths.each do |path|
+                updated = true
+                warn "TRIMMED: #{path}"
+            end
+        end
+        
         # Remove missing files and notify
         files_changed.select! do |file, paths|
             File.exists?(file).tap { |exist|

@@ -64,8 +64,8 @@ class Vault
     # @param file      [String]         path to file relative to dir
     # @param depth     [Integer,nil]    exploration depth
     #
-    # @returns [nil] if not able to decide (doesn't exist, incorrect path)
     # @returns [Boolean] if allowed
+    # @returns [nil] if not able to decide (doesn't exist, incorrect path)
     #
     def self.allowed_file?(dir, file, depth: nil)
         path     = File.join(dir, file)
@@ -187,12 +187,13 @@ class Vault
     #
     # @param file        [String]       file to load
     # @param out_of_sync [Boolean,Proc] if true keep out of sync ROM
+    # @param trimmed     [Boolean,Proc] if tree keep trimmed file
     #
     # @return [Vault]
     #
     # @raise [LoadError] content is not loadable
     #
-    def self.load(file, out_of_sync: true)
+    def self.load(file, out_of_sync: true, trimmed: true)
         archives = {}			  # Consolidating archives entries
         vault    = Vault.new		  # Vault object
         dir      = File.dirname(file)	  # Base directory
@@ -222,15 +223,26 @@ class Vault
                       ROM.new(ROM::Path::File.new(file, dir), **info)
                   end
 
+            # Is file part of the allowed files
+            #  => If it was not possible to decide (allowed_file? returned nil)
+            #     it means file doesn't exist or path is incorrect, so
+            #     consider it as allowed, and it will be marked below as
+            #     out of sync if necessary
+            allowed    = self.allowed_file?(dir, rom.path.file) != false
+
             # Has underlying storage changed?
             unchanged = File.exists?(rom.path.file) &&
                         (File.mtime(rom.path.file) == timestamp)
 
             # Add rom to vault
-            if unchanged || case out_of_sync
-                            when Proc        then out_of_sync.call(rom)
-                            when true, false then out_of_sync
-                            end
+            if (allowed   || case trimmed
+                             when Proc        then trimmed.call(rom)
+                             when true, false then trimmed
+                             end) &&
+               (unchanged || case out_of_sync
+                             when Proc        then out_of_sync.call(rom)
+                             when true, false then out_of_sync
+                             end) 
                 vault.add_rom(rom)
             end
         end
