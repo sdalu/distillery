@@ -88,6 +88,16 @@ class Logiqx
         DatFile.new(games, **meta)
     end
 
+
+    def self.get_meta(data)
+        # Parse Logiqx DAT file
+        meta, games = self.parse(data)
+
+        # That's not a Logiqx DAT file
+        return nil if meta.nil?
+
+        meta
+    end
     
     private
     

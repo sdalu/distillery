@@ -60,6 +60,29 @@ class DatFile
     end
     
     
+    # Get DatFile identity (ie: metadata) from file.
+    # @note This will fully parse the file, you could wish to use #get instead
+    #       if you will require further processing
+    #
+    # @param datfile [String]
+    #
+    # @returns [Hash{Symbol => String}]
+    #
+    # @raises [ContentError]
+    #
+    def self.identity(datfile)
+        if !FileTest.file?(datfile)
+            raise ArgumentError, "DAT file is missing or not a regular file"
+        end
+        
+        data  = File.read(datfile, encoding: 'BINARY')
+        
+        meta ||= Logiqx.get_meta(data)     if defined?(Logiqx)
+        meta ||= ClrMamePro.get_meta(data) if defined?(ClrMamePro)
+        meta || raise(ContentError)
+    end
+    
+    
     # Create DatFile representation
     #
     # @param games        [Array<Game>]		list of games

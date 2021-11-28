@@ -123,6 +123,23 @@ class ClrMamePro
         # Returns datfile
         DatFile.new(games, **meta)
     end
+
+
+    def self.get_meta(data)
+        # Parse ClrMamePro DAT file
+        meta, games, resources = self.parse(data)
+
+        # That's not a ClrMAmepro DAT file
+        return nil if meta.nil?
+        
+        # Metadata information
+        meta = { :name        => meta.dig('name'       ),
+                 :description => meta.dig('description'),
+                 :version     => meta.dig('version'    ),
+                 :author      => meta.dig('author'     ),
+               }.compact
+    end
+
     
     private
     
