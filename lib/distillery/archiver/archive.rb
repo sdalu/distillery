@@ -29,7 +29,12 @@ class Archive
         end
     end
 
-
+    
+    def inspect
+        "#<#{self.class} #{self.file}>"
+    end
+ 
+    
     # Returns the file this archive instance is bound to
     #
     # @return [String]  path to archive
